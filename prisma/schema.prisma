@@ -1,0 +1,88 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+// prisma/schema.prisma
+datasource db {
+  provider  = "postgresql"
+  url  	    = env("DATABASE_URL")
+  // uncomment next line if you use Prisma <5.10
+  // directUrl = env("DATABASE_URL_UNPOOLED")
+}
+
+model Admin {
+  admin_id              String @unique @id @default(cuid())
+  adminName             String
+  adminEmail            String @unique
+  adminPhoneNumber      String
+  adminPassword         String
+  staff                 Staff[]
+}
+
+model Staff {
+  staff_id              String @id @unique @default(cuid())
+  staffName             String 
+  staffEmail            String @unique
+  staffPhoneNumber      String  
+  staffPassword         String
+  referralCode          String @unique
+  user                  User[]
+  admin_id              String 
+  admin                 Admin @relation(fields:[admin_id],references:[admin_id])
+}
+
+model User {
+  user_id                String     @id @unique @default(cuid())
+  name                   String
+  email                  String     @unique
+  phoneNumber            String
+  password               String
+  businessName           String
+  businessType           String
+  placeId                String 
+  referralCode           String
+  isActive               Boolean  @default(true)
+  otp                    String?
+  otpExpiry              DateTime? 
+  subscriptionStartDate  DateTime
+  subscriptionEndDate    DateTime?
+  createdAt              DateTime   @default(now())
+  updatedAt              DateTime   @updatedAt
+  dashboard              Dashboard?
+  staff_id               String
+  staff                  Staff @relation(fields:[staff_id],references:[staff_id])
+  helpdesk               Helpdesk[]
+}
+
+model Helpdesk {
+  helpdesk_id            String @id @default(cuid())
+  phoneNumber            String
+  comment                String
+  user_id                String
+  user                   User @relation(fields:[user_id],references:[user_id])
+
+}
+
+model Token {
+  token_id               String @id @unique @default(cuid())
+  refreshToken           String
+}
+
+model Dashboard {
+  dashboard_id           String   @id @unique @default(cuid())
+  user_id                String   @unique
+  user                   User     @relation(fields: [user_id], references: [user_id])
+  review                 Review[]
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+}
+
+model Review {
+  review_id              String    @id @unique @default(cuid())
+  rating                 Int
+  comment                String?
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime @updatedAt
+  dashboard_id           String   
+  dashboard              Dashboard @relation(fields: [dashboard_id], references: [dashboard_id])
+}

@@ -407,7 +407,7 @@ app.get('/admin', async (req, res) => {
                     role: true,
                 },
             });
-            await client.set("ADMIN",JSON.stringify(allAdmins),"EX",3600 )
+            await client.set("ADMIN", JSON.stringify(allAdmins), "EX", 3600)
 
             if (allAdmins.length === 0) {
                 return res.status(404).json({ success: false, message: 'No admins found.' });
@@ -496,43 +496,43 @@ app.post('/admin/employees', async (req, res) => {
         const data = req.body;
 
         const isExistingUser = await prisma.employees.findUnique({
-            where:{
-                employeeEmail:data.employeeEmail
+            where: {
+                employeeEmail: data.employeeEmail
             }
         })
         // console.log(data)
         // console.log(isExistingUser)
-        if(isExistingUser){
+        if (isExistingUser) {
             return res.json({ message: "User Already Existed" });
-        }else{    
-            
+        } else {
 
-             const yearPart = moment().format('YY'); // Last two digits of the year (e.g., '20' for 2020)
-             const monthPart = moment().format('MMM').toUpperCase(); // Abbreviated month (e.g., 'DEC')
-             const datePart = moment().format('DD'); // Day of the month (2 digits)
-             const randomPart = Math.floor(1000 + Math.random() * 9000); // 4-digit random number to ensure uniqueness
-             const referralCode = `WZ${yearPart}${monthPart}${datePart}-${randomPart}`;
 
-        // Create the staff entry in the database
-        const createEmployee = await prisma.employees.create({
-            data: {
-                employeeName: data.employeeName,
-                employeeEmail: data.employeeEmail,
-                employeePhoneNumber: data.employeePhoneNumber,
-                employeePassword: data.employeePassword,
-                referralCode: referralCode,
-                responsibleEmployeeId: data.responsibleEmployeeId,
-                role: data.role
-            }
-        });
-        // console.log(createEmployee)
+            const yearPart = moment().format('YY'); // Last two digits of the year (e.g., '20' for 2020)
+            const monthPart = moment().format('MMM').toUpperCase(); // Abbreviated month (e.g., 'DEC')
+            const datePart = moment().format('DD'); // Day of the month (2 digits)
+            const randomPart = Math.floor(1000 + Math.random() * 9000); // 4-digit random number to ensure uniqueness
+            const referralCode = `WZ${yearPart}${monthPart}${datePart}-${randomPart}`;
 
-        res.json({
-            message: "New Admin Created",
-            data: {
-                createEmployee
-            }
-        });
+            // Create the staff entry in the database
+            const createEmployee = await prisma.employees.create({
+                data: {
+                    employeeName: data.employeeName,
+                    employeeEmail: data.employeeEmail,
+                    employeePhoneNumber: data.employeePhoneNumber,
+                    employeePassword: data.employeePassword,
+                    referralCode: referralCode,
+                    responsibleEmployeeId: data.responsibleEmployeeId,
+                    role: data.role
+                }
+            });
+            // console.log(createEmployee)
+
+            res.json({
+                message: "New Admin Created",
+                data: {
+                    createEmployee
+                }
+            });
 
         }
 
@@ -549,80 +549,81 @@ app.post('/admin/employees', async (req, res) => {
 app.get('/staff', async (req, res) => {
     try {
         const getCatchRedise = await client.get("STAFF")
-        if(getCatchRedise){
+        if (getCatchRedise) {
             res.status(200).json({ success: true, data: JSON.parse(getCatchRedise) });
-        }else{
-        const allStaff = await prisma.employees.findMany({
-            where: {
-                role: 'STAFF',
-            },
-            select: {
-                employee_id: true,
-                employeeName: true,
-                employeeEmail: true,
-                employeePhoneNumber: true,
-                referralCode:true,
-                role: true,
-            },
-        });
-        console.log(allStaff)      
-        
-        await client.set("STAFF",JSON.stringify(allStaff),"EX",3600 )
+        } else {
+            const allStaff = await prisma.employees.findMany({
+                where: {
+                    role: 'STAFF',
+                },
+                select: {
+                    employee_id: true,
+                    employeeName: true,
+                    employeeEmail: true,
+                    employeePhoneNumber: true,
+                    referralCode: true,
+                    role: true,
+                },
+            });
+            console.log(allStaff)
 
-        if (allStaff.length === 0) {
-            return res.status(404).json({ success: false, message: 'No staff found.' });
+            await client.set("STAFF", JSON.stringify(allStaff), "EX", 3600)
+
+            if (allStaff.length === 0) {
+                return res.status(404).json({ success: false, message: 'No staff found.' });
+            }
+
+            res.status(200).json({ success: true, data: allStaff });
         }
-
-        res.status(200).json({ success: true, data: allStaff });}
     } catch (error) {
         console.error('Error fetching staff:', error);
         res.status(500).json({ success: false, message: 'An error occurred while fetching staff.' });
     }
 });
 
-app.post('/admin/employees/login', async (req,res)=>{
+app.post('/admin/employees/login', async (req, res) => {
     const data = req.body;
     console.log(data)
     const isExistingUser = await prisma.employees.findUnique({
-        where:{
-            employeeEmail:data.email
+        where: {
+            employeeEmail: data.email
         }
     })
     console.log(isExistingUser)
-    if(!isExistingUser){
+    if (!isExistingUser) {
         if (!isExistingUser) {
             return res.status(404).json({ message: "User not found. Please ensure the admin has registered. Contact support for assistance." });
         }
-    }else{
-//         console.log(data)
-// console.log(isExistingUser)
-        if(data.password===isExistingUser.employeePassword){
+    } else {
+        //         console.log(data)
+        // console.log(isExistingUser)
+        if (data.password === isExistingUser.employeePassword) {
 
-        var accessToken = jwt.sign({ employee_id: isExistingUser.employee_id,role:isExistingUser.role }, 'ikeyqr', {
-            expiresIn: "60s"
-        });
-        var refreshToken = jwt.sign({ employee_id: isExistingUser.employee_id,role: isExistingUser.role }, 'ikeyqr', {
-            expiresIn: "60s"
-        });
-        
-        await prisma.token.create({
-            data: {
-                refreshToken: refreshToken
-            }
-        })
+            var accessToken = jwt.sign({ employee_id: isExistingUser.employee_id, role: isExistingUser.role }, 'ikeyqr', {
+                expiresIn: "60s"
+            });
+            var refreshToken = jwt.sign({ employee_id: isExistingUser.employee_id, role: isExistingUser.role }, 'ikeyqr', {
+                expiresIn: "60s"
+            });
 
-        res.json({
-            employee_id: isExistingUser.employee_id,
-            role:isExistingUser.role,
-            token: {
-                accessToken,
-                refreshToken
-            },
-            message: "Successfully logged in",
-        });
-    }else{
-      return  res.status(401).json({ message: "Invalid username or password" });
-    }
+            await prisma.token.create({
+                data: {
+                    refreshToken: refreshToken
+                }
+            })
+
+            res.json({
+                employee_id: isExistingUser.employee_id,
+                role: isExistingUser.role,
+                token: {
+                    accessToken,
+                    refreshToken
+                },
+                message: "Successfully logged in",
+            });
+        } else {
+            return res.status(401).json({ message: "Invalid username or password" });
+        }
 
     }
 })
@@ -630,10 +631,10 @@ app.post('/admin/employees/login', async (req,res)=>{
 app.get('/staff/:id/referrals', async (req, res) => {
     try {
         const data = req.params;
-// console.log(data)
+        // console.log(data)
         // Find the staff by their admin_id
         const staff = await prisma.employees.findUnique({
-            where: { employee_id: data.id},
+            where: { employee_id: data.id },
             select: { referralCode: true },
         });
 
@@ -650,7 +651,9 @@ app.get('/staff/:id/referrals', async (req, res) => {
                 name: true,
                 email: true,
                 phoneNumber: true,
-                isActive:true,
+                businessName:true,
+                 businessType:true,
+                isActive: true,
                 createdAt: true, // Optional: Include timestamp
             },
         });
@@ -661,7 +664,7 @@ app.get('/staff/:id/referrals', async (req, res) => {
                 .status(404)
                 .json({ success: false, message: 'No users found for this referral code.' });
         }
-console.log(users)
+        console.log(users)
         res.status(200).json({ success: true, data: users });
     } catch (error) {
         console.error('Error fetching referrals:', error);

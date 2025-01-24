@@ -4,6 +4,7 @@ const { PrismaClient } = require("@prisma/client")
 const prisma = new PrismaClient()
 const cors = require("cors")
 const bcrypt = require('bcrypt');
+const Redis = require('ioredis')
 var jwt = require('jsonwebtoken');
 const moment = require('moment'); // Install moment.js for date formatting
 const nodemailer = require('nodemailer');
@@ -17,9 +18,13 @@ const transporter = nodemailer.createTransport({
 app.use(express.json())
 app.use(cors())
 
-const productRoute = require("./protectedRoute")
 
-app.post('/register', async (req, res) => {
+const client = new Redis("rediss://default:AeANAAIjcDEwYmY4YTRhZGQyMTg0YjVlOTgxYmI0MDNiMjdjNDliY3AxMA@desired-toad-57357.upstash.io:6379");
+
+const productRoute = require("./protectedRoute")
+const roleBasedAccess = require("./roleBasedAccess")
+
+app.post('/auth/register', async (req, res) => {
     try {
         const data = req.body;
         const isExistingUser = await prisma.user.findUnique({
@@ -29,18 +34,20 @@ app.post('/register', async (req, res) => {
         });
 
         if (isExistingUser) {
-            return res.json({ message: "User Existed" });
+            return res.json({ message: "User Already Existed" });
         } else {
-            const Staff = await prisma.staff.findUnique({
-                where:{
-                  referralCode:data.referralCode
-            }})
-            if(!Staff){
-                res.json({
-                    message:"Invaild ReferralCode"
+            const Staff = await prisma.employees.findUnique({
+                where: {
+                    referralCode: data.referralCode
+                }
+            })
+            // console.log(Staff)
+            if (!Staff) {
+                return res.json({
+                    message: "Invaild ReferralCode"
                 })
             }
-            // console.log(Staff.staff_id)
+
             const hashedPassword = await bcrypt.hash(data.password, 10);
             const createNewUser = await prisma.user.create({
                 data: {
@@ -51,8 +58,8 @@ app.post('/register', async (req, res) => {
                     placeId: data.placeId,
                     businessName: data.businessName,
                     businessType: data.businessType,
-                    staff_id:Staff.staff_id,
-                    referralCode:data.referralCode,
+                    employee_id: Staff.employee_id,
+                    referralCode: data.referralCode,
                     isActive: false,
                     subscriptionStartDate: new Date(),
                 }
@@ -73,7 +80,7 @@ app.post('/register', async (req, res) => {
     }
 });
 
-app.post('/login', async (req, res) => {
+app.post('/auth/login', async (req, res) => {
     try {
         const data = req.body;
 
@@ -126,7 +133,7 @@ app.post('/login', async (req, res) => {
     }
 });
 
-app.post('/refresh', async (req, res) => {
+app.post('/auth/refresh', async (req, res) => {
     const data = req.body;
     const tokenValid = await prisma.token.findFirst({
         where: {
@@ -163,7 +170,7 @@ app.post('/checking', productRoute, async (req, res) => {
     })
 })
 
-app.post('/forgot-password', async (req, res) => {
+app.post('/auth/forgot-password', async (req, res) => {
     const data = req.body;
 
     // Check if user exists
@@ -222,7 +229,7 @@ app.post('/forgot-password', async (req, res) => {
     });
 })
 
-app.post('/verify-otp', async (req, res) => {
+app.post('/auth/verify-otp', async (req, res) => {
     const data = req.body;
 
     // Find user by email
@@ -260,7 +267,7 @@ app.post('/verify-otp', async (req, res) => {
     res.json({ message: "Password successfully reset" });
 })
 
-app.get("/dashboard/:id", productRoute, async (req, res) => {
+app.get("/users/:id/dashboard", productRoute, async (req, res) => {
     // Extracting `id` from request parameters
     const { id } = req.params;
     console.log("Received request for dashboard. User ID:", id); // Debug log
@@ -380,83 +387,294 @@ app.post('/review/:id', async (req, res) => {
     }
 });
 
-app.post('/register-admin', async (req, res) => {
-    const data = req.body;
-    const createAdmin = await prisma.admin.create({
-        data: {
-            adminName: data.adminName,
-            adminEmail: data.adminEmail,
-            adminPhoneNumber: data.adminPhoneNumber,
-            adminPassword: data.adminPassword
+
+app.get('/admin', async (req, res) => {
+    try {
+
+        const getCatchRedise = await client.get("ADMIN")
+        if (getCatchRedise) {
+            return res.status(200).json({ success: true, data: JSON.parse(getCatchRedise) });
+        } else {
+            const allAdmins = await prisma.employees.findMany({
+                where: {
+                    role: 'ADMIN',
+                },
+                select: {
+                    employee_id: true,
+                    employeeName: true,
+                    employeeEmail: true,
+                    employeePhoneNumber: true,
+                    role: true,
+                },
+            });
+            await client.set("ADMIN",JSON.stringify(allAdmins),"EX",3600 )
+
+            if (allAdmins.length === 0) {
+                return res.status(404).json({ success: false, message: 'No admins found.' });
+            }
+
+            res.status(200).json({ success: true, data: allAdmins });
         }
-    })
-    res.json({
-        message: "New Admin Created",
-        data: {
-            createAdmin
+    } catch (error) {
+        console.error('Error fetching admins:', error);
+        res.status(500).json({ success: false, message: 'An error occurred while fetching admins.' });
+    }
+});
+
+
+
+// app.get('/staff/123', async (req, res) => {
+//     try {
+//         const { search } = req.query;
+
+//         // Build the search filter dynamically
+//         const searchFilter = search
+//             ? {
+//                   OR: [
+//                       { adminName: { contains: search, mode: 'insensitive' } },
+//                       { adminEmail: { contains: search, mode: 'insensitive' } },
+//                       { adminPhoneNumber: { contains: search, mode: 'insensitive' } },
+//                   ],
+//               }
+//             : {};
+
+//         // Fetch staff based on the search filter
+//         const allStaff = await prisma.admin.findMany({
+//             where: {
+//                 role: 'STAFF',
+//                 ...searchFilter,
+//             },
+//             select: {
+//                 admin_id: true,
+//                 adminName: true,
+//                 adminEmail: true,
+//                 adminPhoneNumber: true,
+//                 role: true,
+//             },
+//         });
+
+//         if (allStaff.length === 0) {
+//             return res.status(404).json({ success: false, message: 'No staff found.' });
+//         }
+
+//         res.status(200).json({ success: true, data: allStaff });
+//     } catch (error) {
+//         console.error('Error fetching staff:', error);
+//         res.status(500).json({ success: false, message: 'An error occurred while fetching staff.' });
+//     }
+// });
+
+
+// Route 3: Get a specific admin by ID
+
+
+app.get('/admin/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const admin = await prisma.admin.findUnique({
+            where: {
+                admin_id: id,
+            },
+        });
+
+        if (!admin || admin.role !== 'ADMIN') {
+            return res.status(404).json({ success: false, message: 'Admin not found.' });
         }
-    })
-})
 
-app.get('/register-admin',async(req,res)=>{
-    const getRegisterAdmin = await prisma.admin.findMany()
-    res.json({
-        data:{
-            getRegisterAdmin
-        }
-    })
-})
+        res.status(200).json({ success: true, data: admin });
+    } catch (error) {
+        console.error('Error fetching admin:', error);
+        res.status(500).json({ success: false, message: 'An error occurred while fetching the admin.' });
+    }
+});
 
-app.get('/register-staff',async(req,res)=>{
-    const getRegisterStaff = await prisma.staff.findMany()
-    res.json({
-        data:{
-            getRegisterStaff
-        }
-    })
-})
+// Route 4: Get a specific staff by ID
 
-
-
-app.post('/register-staff', async (req, res) => {
+app.post('/admin/employees', async (req, res) => {
     try {
         const data = req.body;
 
-        // Extract the first 3 letters from the staff name
-        const namePart = data.staffName.substring(0, 3).toUpperCase();
+        const isExistingUser = await prisma.employees.findUnique({
+            where:{
+                employeeEmail:data.employeeEmail
+            }
+        })
+        // console.log(data)
+        // console.log(isExistingUser)
+        if(isExistingUser){
+            return res.json({ message: "User Already Existed" });
+        }else{    
+            
 
-        // Get the current date in the desired format (DDMMMYY)
-        const datePart = moment().format('DDMMMYY').toUpperCase();
-
-        // Generate the referral code in the desired format
-        const referralCode = `WZT-${namePart}${datePart}`;
+             const yearPart = moment().format('YY'); // Last two digits of the year (e.g., '20' for 2020)
+             const monthPart = moment().format('MMM').toUpperCase(); // Abbreviated month (e.g., 'DEC')
+             const datePart = moment().format('DD'); // Day of the month (2 digits)
+             const randomPart = Math.floor(1000 + Math.random() * 9000); // 4-digit random number to ensure uniqueness
+             const referralCode = `WZ${yearPart}${monthPart}${datePart}-${randomPart}`;
 
         // Create the staff entry in the database
-        const createStaff = await prisma.staff.create({
+        const createEmployee = await prisma.employees.create({
             data: {
-                staffName: data.staffName,
-                staffEmail: data.staffEmail,
-                staffPhoneNumber: data.staffPhoneNumber,
-                staffPassword: data.staffPassword,
-                referralCode: referralCode, // Assign the generated referral code
-                admin_id: data.admin_id
+                employeeName: data.employeeName,
+                employeeEmail: data.employeeEmail,
+                employeePhoneNumber: data.employeePhoneNumber,
+                employeePassword: data.employeePassword,
+                referralCode: referralCode,
+                responsibleEmployeeId: data.responsibleEmployeeId,
+                role: data.role
+            }
+        });
+        // console.log(createEmployee)
+
+        res.json({
+            message: "New Admin Created",
+            data: {
+                createEmployee
             }
         });
 
-        res.json({
-            message: "New Staff Created",
-            data: {
-                createStaff
-            }
-        });
+        }
+
     } catch (error) {
         console.error(error);
         res.status(500).json({
-            message: "Error creating staff",
+            message: "Error creating ",
             error: error.message
         });
     }
 });
+
+// Route 2: Get all staff
+app.get('/staff', async (req, res) => {
+    try {
+        const getCatchRedise = await client.get("STAFF")
+        if(getCatchRedise){
+            res.status(200).json({ success: true, data: JSON.parse(getCatchRedise) });
+        }else{
+        const allStaff = await prisma.employees.findMany({
+            where: {
+                role: 'STAFF',
+            },
+            select: {
+                employee_id: true,
+                employeeName: true,
+                employeeEmail: true,
+                employeePhoneNumber: true,
+                referralCode:true,
+                role: true,
+            },
+        });
+        console.log(allStaff)      
+        
+        await client.set("STAFF",JSON.stringify(allStaff),"EX",3600 )
+
+        if (allStaff.length === 0) {
+            return res.status(404).json({ success: false, message: 'No staff found.' });
+        }
+
+        res.status(200).json({ success: true, data: allStaff });}
+    } catch (error) {
+        console.error('Error fetching staff:', error);
+        res.status(500).json({ success: false, message: 'An error occurred while fetching staff.' });
+    }
+});
+
+app.post('/admin/employees/login', async (req,res)=>{
+    const data = req.body;
+    console.log(data)
+    const isExistingUser = await prisma.employees.findUnique({
+        where:{
+            employeeEmail:data.email
+        }
+    })
+    console.log(isExistingUser)
+    if(!isExistingUser){
+        if (!isExistingUser) {
+            return res.status(404).json({ message: "User not found. Please ensure the admin has registered. Contact support for assistance." });
+        }
+    }else{
+//         console.log(data)
+// console.log(isExistingUser)
+        if(data.password===isExistingUser.employeePassword){
+
+        var accessToken = jwt.sign({ employee_id: isExistingUser.employee_id,role:isExistingUser.role }, 'ikeyqr', {
+            expiresIn: "60s"
+        });
+        var refreshToken = jwt.sign({ employee_id: isExistingUser.employee_id,role: isExistingUser.role }, 'ikeyqr', {
+            expiresIn: "60s"
+        });
+        
+        await prisma.token.create({
+            data: {
+                refreshToken: refreshToken
+            }
+        })
+
+        res.json({
+            employee_id: isExistingUser.employee_id,
+            role:isExistingUser.role,
+            token: {
+                accessToken,
+                refreshToken
+            },
+            message: "Successfully logged in",
+        });
+    }else{
+      return  res.status(401).json({ message: "Invalid username or password" });
+    }
+
+    }
+})
+
+app.get('/staff/:id/referrals', async (req, res) => {
+    try {
+        const data = req.params;
+// console.log(data)
+        // Find the staff by their admin_id
+        const staff = await prisma.employees.findUnique({
+            where: { employee_id: data.id},
+            select: { referralCode: true },
+        });
+
+        // If no staff found
+        if (!staff) {
+            return res.status(404).json({ success: false, message: 'Staff not found.' });
+        }
+
+        // Fetch all users associated with the staff's referralCode
+        const users = await prisma.user.findMany({
+            where: { referralCode: staff.referralCode },
+            select: {
+                user_id: true,
+                name: true,
+                email: true,
+                phoneNumber: true,
+                isActive:true,
+                createdAt: true, // Optional: Include timestamp
+            },
+        });
+
+        // If no users found for the referralCode
+        if (users.length === 0) {
+            return res
+                .status(404)
+                .json({ success: false, message: 'No users found for this referral code.' });
+        }
+console.log(users)
+        res.status(200).json({ success: true, data: users });
+    } catch (error) {
+        console.error('Error fetching referrals:', error);
+        res.status(500).json({ success: false, message: 'An error occurred while fetching referrals.' });
+    }
+});
+
+
+
+
+// Staff dashboard routes
+
+
 
 
 app.listen(9004, () => {

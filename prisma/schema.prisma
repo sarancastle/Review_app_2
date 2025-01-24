@@ -10,25 +10,21 @@ datasource db {
   // directUrl = env("DATABASE_URL_UNPOOLED")
 }
 
-model Admin {
-  admin_id              String @unique @id @default(cuid())
-  adminName             String
-  adminEmail            String @unique
-  adminPhoneNumber      String
-  adminPassword         String
-  staff                 Staff[]
+enum Role {
+  ADMIN
+  STAFF
 }
 
-model Staff {
-  staff_id              String @id @unique @default(cuid())
-  staffName             String 
-  staffEmail            String @unique
-  staffPhoneNumber      String  
-  staffPassword         String
-  referralCode          String @unique
-  user                  User[]
-  admin_id              String 
-  admin                 Admin @relation(fields:[admin_id],references:[admin_id])
+model Employees {
+  employee_id               String  @unique @id @default(cuid())
+  employeeName              String
+  employeeEmail             String  @unique
+  employeePhoneNumber       String
+  employeePassword          String
+  referralCode              String  @unique
+  role                      Role    @default(STAFF)
+  responsibleEmployeeId     String? 
+  user                      User[]
 }
 
 model User {
@@ -49,8 +45,8 @@ model User {
   createdAt              DateTime   @default(now())
   updatedAt              DateTime   @updatedAt
   dashboard              Dashboard?
-  staff_id               String
-  staff                  Staff @relation(fields:[staff_id],references:[staff_id])
+  employee_id               String 
+  employees               Employees @relation(fields:[employee_id],references:[employee_id])
   helpdesk               Helpdesk[]
 }
 

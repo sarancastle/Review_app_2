@@ -267,7 +267,7 @@ app.post('/auth/verify-otp', async (req, res) => {
     res.json({ message: "Password successfully reset" });
 })
 
-app.get("/users/:id/dashboard", productRoute, async (req, res) => {
+app.get("/users/:id/dashboard", async (req, res) => {
     // Extracting `id` from request parameters
     const { id } = req.params;
     console.log("Received request for dashboard. User ID:", id); // Debug log

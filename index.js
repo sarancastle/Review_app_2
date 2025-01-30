@@ -545,6 +545,36 @@ app.post('/employees/register', async (req, res) => {
     }
 });
 
+app.post('/change-password', async (req, res) => {
+    const { employeeEmail, oldPassword, newPassword } = req.body;
+
+    try {
+        // Find employee by email
+        const employee = await prisma.employees.findUnique({
+            where: { employeeEmail }
+        });
+        
+        if (!employee) {
+            return res.status(404).json({ message: "Employee not found" });
+        }
+
+        // Compare old password with stored password (plain text comparison)
+        if (employee.employeePassword !== oldPassword) {
+            return res.status(400).json({ message: "Incorrect old password" });
+        }
+
+        // Update password in the database
+        await prisma.employees.update({
+            where: { employeeEmail },
+            data: { employeePassword: newPassword }
+        });
+
+        res.json({ message: "Password updated successfully" });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Server error" });
+    }
+});
 // Route 2: Get all staff
 app.get('/staff', async (req, res) => {
     try {

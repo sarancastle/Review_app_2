@@ -491,7 +491,7 @@ app.get('/admin/:id', async (req, res) => {
 
 // Route 4: Get a specific staff by ID
 
-app.post('/admin/employees', async (req, res) => {
+app.post('/employees/register', async (req, res) => {
     try {
         const data = req.body;
 
@@ -580,6 +580,29 @@ app.get('/staff', async (req, res) => {
         res.status(500).json({ success: false, message: 'An error occurred while fetching staff.' });
     }
 });
+
+app.get('/employees/:id', async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        const staffDetails = await prisma.employees.findUnique({
+            where: { employee_id: id }
+        });
+
+        if (!staffDetails) {
+            return res.status(404).json({ error: "Employee not found" });
+        }
+
+        // Destructure and exclude the password
+        const { employeePassword, ...rest } = staffDetails;
+
+        res.json({ data: rest });
+    } catch (error) {
+        console.error("Error fetching employee:", error);
+        res.status(500).json({ error: "Internal server error" });
+    }
+});
+
 
 app.post('/admin/employees/login', async (req, res) => {
     const data = req.body;

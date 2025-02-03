@@ -24,6 +24,7 @@ const client = new Redis("rediss://default:AeANAAIjcDEwYmY4YTRhZGQyMTg0YjVlOTgxY
 const productRoute = require("./protectedRoute")
 const roleBasedAccess = require("./roleBasedAccess")
 
+
 app.post('/auth/register', async (req, res) => {
     try {
         const data = req.body;
@@ -315,15 +316,18 @@ app.get("/users/:id/dashboard", async (req, res) => {
         if (negativeReviews.length > 0) {
             // Calculate average rating for negative reviews
             const avgNegativeRating = negativeReviews.reduce((acc, review) => acc + review.rating, 0) / negativeReviews.length;
-            negativePercentage = (avgNegativeRating / 5) * 100; // Convert to percentage
+            negativePercentage = (avgNegativeRating / 5); // Convert to percentage
         }
-
-        const positivePercentage = 100 - negativePercentage;
+        console.log(negativePercentage)
+        const positivePercentage = 5 - negativePercentage;
+        
 
         res.json({
             userDetails,
             positiveReviewPercentage: positivePercentage.toFixed(2),
             reviewForm_url: `review/${userDetails.user_id}`,
+            
+
         });
 
     } catch (error) {
@@ -333,31 +337,43 @@ app.get("/users/:id/dashboard", async (req, res) => {
     }
 })
 
-// app.post('/user-help/:id',async (req,res)=>{
-//     const data = req.body;
-//     const {id} = req.params;
-//     const userHelpDesk = await prisma.helpdesk.create({
-//         data:{
-//             user_id:id,
-//             phoneNumber:data.phoneNumber,
-//             comment:data.comment
-//         }
-//     }) 
-//     res.json({
-//         userHelpDesk
-//     })
-// })
+app.post('/users-help-center', async (req, res) => {
+    const data = req.body;
+    
+    // Assuming the user ID is coming with the request body
+    const { phoneNumber, comment, user_id } = data;
 
-// model Helpdesk {
-//     helpdesk_id            String @id @default(cuid())
-//     phoneNumber            String
-//     comment                String
-//     user_id                String
-//     user                   User @relation(fields:[user_id],references:[user_id])
-//   }
+    // Ensure user_id is provided
+    if (!user_id) {
+        return res.status(400).json({ message: 'User ID is required' });
+    }
+
+    try {
+        const userHelpDesk = await prisma.helpdesk.create({
+            data: {
+                phoneNumber: phoneNumber,
+                comment: comment,
+                user_id: user_id  // Directly assigning user_id
+            }
+        });
+        
+        res.json({
+            userHelpDesk
+        });
+    } catch (error) {
+        res.status(500).json({ message: 'Error creating helpdesk entry', error: error.message });
+    }
+});
+
+
+app.get('/users-help-center', async (req, res) => {
+    const userHelpDesk = await prisma.helpdesk.findMany()
+    res.json({ userHelpDesk })
+})
+
 
 app.post('/review/:id', async (req, res) => {
-    const { rating, comment } = req.body;
+    const { name, rating, comment } = req.body;
     const { id } = req.params;
 
     try {
@@ -388,6 +404,7 @@ app.post('/review/:id', async (req, res) => {
 
         await prisma.review.create({
             data: {
+                name,
                 rating,
                 comment,
                 dashboard_id: dashboard.dashboard_id,
@@ -632,6 +649,7 @@ app.get('/employees/:id', async (req, res) => {
         const staffDetails = await prisma.employees.findUnique({
             where: { employee_id: id }
         });
+        console.log(staffDetails)
 
         if (!staffDetails) {
             return res.status(404).json({ error: "Employee not found" });
@@ -649,51 +667,39 @@ app.get('/employees/:id', async (req, res) => {
 
 
 app.post('/employees/login', async (req, res) => {
-    const data = req.body;
-    console.log(data)
-    const isExistingUser = await prisma.employees.findUnique({
-        where: {
-            employeeEmail: data.email
+    try {
+        const { email, password } = req.body;
+        console.log(req.body);
+
+        const isExistingUser = await prisma.employees.findUnique({
+            where: { employeeEmail: email }
+        });
+        console.log(isExistingUser);
+
+        if (!isExistingUser) {
+            return res.status(404).json({ message: "User not found. Contact support for assistance." });
         }
-    })
-    console.log(isExistingUser)
-    if (!isExistingUser) {
-       
-            return res.json({ message: "User not found. Please ensure the admin has registered. Contact support for assistance." });
-  
-    } else {
-        //         console.log(data)
-        // console.log(isExistingUser)
-        if (data.password === isExistingUser.employeePassword) {
 
-            var accessToken = jwt.sign({ employee_id: isExistingUser.employee_id, role: isExistingUser.role }, 'ikeyqr', {
-                expiresIn: "60s"
-            });
-            var refreshToken = jwt.sign({ employee_id: isExistingUser.employee_id, role: isExistingUser.role }, 'ikeyqr', {
-                expiresIn: "60s"
-            });
-
-            await prisma.token.create({
-                data: {
-                    refreshToken: refreshToken
-                }
-            })
-
-            res.json({
-                employee_id: isExistingUser.employee_id,
-                role: isExistingUser.role,
-                token: {
-                    accessToken,
-                    refreshToken
-                },
-                message: "Successfully logged in",
-            });
-        } else {
+        if (password !== isExistingUser.employeePassword) {
             return res.status(401).json({ message: "Invalid username or password" });
         }
 
+        const accessToken = jwt.sign({ employee_id: isExistingUser.employee_id, role: isExistingUser.role }, 'ikeyqr', { expiresIn: "60s" });
+        const refreshToken = jwt.sign({ employee_id: isExistingUser.employee_id, role: isExistingUser.role }, 'ikeyqr', { expiresIn: "60s" });
+
+        await prisma.token.create({ data: { refreshToken } });
+
+        res.status(200).json({
+            employee_id: isExistingUser.employee_id,
+            role: isExistingUser.role,
+            token: { accessToken, refreshToken },
+            message: "Successfully logged in"
+        });
+    } catch (error) {
+        console.error("Server error:", error);
+        res.status(500).json({ message: "Internal server error. Please try again later." });
     }
-})
+});
 
 app.get('/staff/:id/referrals', async (req, res) => {
     try {
@@ -718,8 +724,8 @@ app.get('/staff/:id/referrals', async (req, res) => {
                 name: true,
                 email: true,
                 phoneNumber: true,
-                businessName:true,
-                 businessType:true,
+                businessName: true,
+                businessType: true,
                 isActive: true,
                 createdAt: true, // Optional: Include timestamp
             },

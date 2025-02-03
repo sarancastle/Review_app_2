@@ -26,6 +26,7 @@ model Employees {
   role                      Role    @default(STAFF)
   responsibleEmployeeId     String? 
   user                      User[]
+  createdAt                 DateTime @default(now())
 }
 
 model User {
@@ -57,6 +58,7 @@ model Helpdesk {
   comment                String
   user_id                String
   user                   User @relation(fields:[user_id],references:[user_id])
+  createdAt              DateTime @default(now())
 
 }
 
@@ -76,6 +78,7 @@ model Dashboard {
 
 model Review {
   review_id              String    @id @unique @default(cuid())
+  name                   String
   rating                 Int
   comment                String?
   createdAt              DateTime  @default(now())

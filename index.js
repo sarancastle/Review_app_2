@@ -306,12 +306,26 @@ app.get("/users/:id/dashboard", async (req, res) => {
             return res.status(404).json({ error: "User not found" });
         }
 
-        // Return user details in the response
+
+        // Calculate average negative review percentage
+        const negativeReviews = userDetails.review.filter((review) => review.rating <= 3);
+        console.log(negativeReviews)
+        let negativePercentage = 0;
+
+        if (negativeReviews.length > 0) {
+            // Calculate average rating for negative reviews
+            const avgNegativeRating = negativeReviews.reduce((acc, review) => acc + review.rating, 0) / negativeReviews.length;
+            negativePercentage = (avgNegativeRating / 5) * 100; // Convert to percentage
+        }
+
+        const positivePercentage = 100 - negativePercentage;
+
         res.json({
             userDetails,
+            positiveReviewPercentage: positivePercentage.toFixed(2),
             reviewForm_url: `review/${userDetails.user_id}`,
         });
-        console.log("Successfully returned user details."); // Debug log
+
     } catch (error) {
         // Log any errors encountered
         console.error("Error fetching dashboard:", error);
@@ -553,7 +567,7 @@ app.post('/change-password', async (req, res) => {
         const employee = await prisma.employees.findUnique({
             where: { employeeEmail }
         });
-        
+        console.log(employee)
         if (!employee) {
             return res.status(404).json({ message: "Employee not found" });
         }
@@ -634,7 +648,7 @@ app.get('/employees/:id', async (req, res) => {
 });
 
 
-app.post('/admin/employees/login', async (req, res) => {
+app.post('/employees/login', async (req, res) => {
     const data = req.body;
     console.log(data)
     const isExistingUser = await prisma.employees.findUnique({
@@ -644,9 +658,9 @@ app.post('/admin/employees/login', async (req, res) => {
     })
     console.log(isExistingUser)
     if (!isExistingUser) {
-        if (!isExistingUser) {
-            return res.status(404).json({ message: "User not found. Please ensure the admin has registered. Contact support for assistance." });
-        }
+       
+            return res.json({ message: "User not found. Please ensure the admin has registered. Contact support for assistance." });
+  
     } else {
         //         console.log(data)
         // console.log(isExistingUser)
@@ -726,11 +740,7 @@ app.get('/staff/:id/referrals', async (req, res) => {
 });
 
 
-
-
 // Staff dashboard routes
-
-
 
 
 app.listen(9004, () => {

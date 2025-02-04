@@ -80,6 +80,7 @@ app.post('/usercheck', async(req,res) => {
 app.post('/auth/register', async (req, res) => {
     try {
         const data = req.body;
+        console.log(data)
         const isExistingUser = await prisma.user.findUnique({
             where: {
                 email: data.email
@@ -89,17 +90,23 @@ app.post('/auth/register', async (req, res) => {
         if (isExistingUser) {
             return res.json({ message: "User Already Existed" });
         } else {
-            const Staff = await prisma.employees.findUnique({
-                where: {
-                    referralCode: data.referralCode
-                }
-            })
-            // console.log(Staff)
-            if (!Staff) {
-                return res.json({
-                    message: "Invaild ReferralCode"
-                })
-            }
+
+              // Assign default referral code if the given referral code is "Google", "Facebook", or "Instagram"
+        const defaultReferralCode = "WZ25FEB04-4487";
+        const referralSources = ["google", "Facebook", "Instagram"];
+        if (referralSources.includes(data.referralCode)) {
+            data.referralCode = defaultReferralCode;
+        }
+
+        console.log("Final Referral Code:", data.referralCode);
+
+        const Staff = await prisma.employees.findUnique({
+            where: { referralCode: data.referralCode }
+        });
+
+        if (!Staff) {
+            return res.json({ message: "Invalid Referral Code" });
+        }
 
             const hashedPassword = await bcrypt.hash(data.password, 10);
             const createNewUser = await prisma.user.create({

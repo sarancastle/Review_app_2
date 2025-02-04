@@ -19,10 +19,62 @@ app.use(express.json())
 app.use(cors())
 
 
-const client = new Redis("rediss://default:AeANAAIjcDEwYmY4YTRhZGQyMTg0YjVlOTgxYmI0MDNiMjdjNDliY3AxMA@desired-toad-57357.upstash.io:6379");
+// const client = new Redis("rediss://default:AeANAAIjcDEwYmY4YTRhZGQyMTg0YjVlOTgxYmI0MDNiMjdjNDliY3AxMA@desired-toad-57357.upstash.io:6379");
 
+const client = new Redis("rediss://default:AeANAAIjcDEwYmY4YTRhZGQyMTg0YjVlOTgxYmI0MDNiMjdjNDliY3AxMA@desired-toad-57357.upstash.io:6379", {
+    
+    // connectTimeout: 10000, // 10 seconds timeout
+    // keepAlive: 30000, // Send keep-alive packets every 30 seconds
+    retryStrategy(times) {
+      // Exponential backoff for reconnecting
+      const delay = Math.min(times * 50, 2000);
+      console.log(`Reconnecting to Redis in ${delay}ms...`);
+      return delay;
+    },
+    reconnectOnError(err) {
+      console.error('Redis error:', err);
+      return err.message.includes('ECONNRESET') || err.message.includes('ETIMEDOUT');
+    }
+  });
+  
+  client.on('error', (err) => {
+    console.error('Redis error:', err);
+  });
+  
+  client.on('connect', () => {
+    console.log('Connected to Redis');
+  });
+  
+  client.on('reconnecting', () => {
+    console.log('Reconnecting to Redis...');
+  });
 const productRoute = require("./protectedRoute")
 const roleBasedAccess = require("./roleBasedAccess")
+
+
+
+app.post('/usercheck', async(req,res) => {
+    const data = req.body;
+  
+    try {
+      const existingUser = await prisma.user.findUnique({
+        where: { email: data.email },
+      });
+  
+      if (existingUser) {
+        return res.json({ message: "Already a User" });
+      }else{
+        res.json({
+            message: `You can register`,
+          });
+      }
+  
+      
+    } catch (error) {
+      console.error("Error registering user:", error);
+      res.status(500).json({ error: "Something went wrong" });
+    }
+  })
 
 
 app.post('/auth/register', async (req, res) => {
@@ -667,39 +719,51 @@ app.get('/employees/:id', async (req, res) => {
 
 
 app.post('/employees/login', async (req, res) => {
-    try {
-        const { email, password } = req.body;
-        console.log(req.body);
+    const data = req.body;
+    console.log(data)
+    const isExistingUser = await prisma.employees.findUnique({
+        where: {
+            employeeEmail: data.email
+        }
+    })
+    console.log(isExistingUser)
+    if (!isExistingUser) {
 
-        const isExistingUser = await prisma.employees.findUnique({
-            where: { employeeEmail: email }
-        });
-        console.log(isExistingUser);
+        return res.status(400).json({ message: "User not found. Contact support for assistance." });
 
-        if (!isExistingUser) {
-            return res.status(404).json({ message: "User not found. Contact support for assistance." });
+    } else {
+        //         console.log(data)
+        // console.log(isExistingUser)
+        if (data.password === isExistingUser.employeePassword) {
+
+            var accessToken = jwt.sign({ employee_id: isExistingUser.employee_id, role: isExistingUser.role }, 'ikeyqr', {
+                expiresIn: "60s"
+            });
+            var refreshToken = jwt.sign({ employee_id: isExistingUser.employee_id, role: isExistingUser.role }, 'ikeyqr', {
+                expiresIn: "60s"
+            });
+
+            await prisma.token.create({
+                data: {
+                    refreshToken: refreshToken
+                }
+            })
+
+            res.json({
+                employee_id: isExistingUser.employee_id,
+                role: isExistingUser.role,
+                token: {
+                    accessToken,
+                    refreshToken
+                },
+                message: "Successfully logged in",
+            });
+        } else {
+            return res.status(400).json({ message: "Invalid username or password" });
         }
 
-        if (password !== isExistingUser.employeePassword) {
-            return res.status(401).json({ message: "Invalid username or password" });
-        }
-
-        const accessToken = jwt.sign({ employee_id: isExistingUser.employee_id, role: isExistingUser.role }, 'ikeyqr', { expiresIn: "60s" });
-        const refreshToken = jwt.sign({ employee_id: isExistingUser.employee_id, role: isExistingUser.role }, 'ikeyqr', { expiresIn: "60s" });
-
-        await prisma.token.create({ data: { refreshToken } });
-
-        res.status(200).json({
-            employee_id: isExistingUser.employee_id,
-            role: isExistingUser.role,
-            token: { accessToken, refreshToken },
-            message: "Successfully logged in"
-        });
-    } catch (error) {
-        console.error("Server error:", error);
-        res.status(500).json({ message: "Internal server error. Please try again later." });
     }
-});
+})
 
 app.get('/staff/:id/referrals', async (req, res) => {
     try {

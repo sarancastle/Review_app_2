@@ -109,6 +109,10 @@ app.post('/auth/register', async (req, res) => {
         }
 
             const hashedPassword = await bcrypt.hash(data.password, 10);
+
+            // Set subscription expiration to 2 minutes from now
+        const subscriptionEndDate = new Date();
+        subscriptionEndDate.setMinutes(subscriptionEndDate.getMinutes() + 2);
             const createNewUser = await prisma.user.create({
                 data: {
                     name: data.fullName,
@@ -120,8 +124,9 @@ app.post('/auth/register', async (req, res) => {
                     businessType: data.businessType,
                     employee_id: Staff.employee_id,
                     referralCode: data.referralCode,
-                    isActive: false,
+                    isActive: true,
                     subscriptionStartDate: new Date(),
+                    subscriptionEndDate:subscriptionEndDate
                 }
             });
             const dashboard = await prisma.dashboard.create({
@@ -385,6 +390,7 @@ app.get("/users/:id/dashboard", async (req, res) => {
             userDetails,
             positiveReviewPercentage: positivePercentage.toFixed(2),
             reviewForm_url: `review/${userDetails.user_id}`,
+            negativePercentage:negativePercentage
             
 
         });
@@ -818,6 +824,38 @@ app.get('/staff/:id/referrals', async (req, res) => {
 
 
 // Staff dashboard routes
+
+
+
+const checkSubscription = async () => {
+    console.log("Checking expired subscriptions...");
+
+    try {
+        const result = await prisma.user.updateMany({
+            where: {
+                subscriptionEndDate: { lte: new Date() }, // Expired users
+                isActive: true, // Only update active users
+            },
+            data: { isActive: false }, // Set them to inactive
+        });
+        console.log(result)
+
+        if (result.count > 0) {
+            console.log(`Updated ${result.count} users to inactive.`);
+        } else {
+            console.log("No users with expired subscriptions.");
+        }
+
+    } catch (error) {
+        console.error("Error updating subscriptions:", error);
+    }
+};
+
+// Run this function daily at 12 AM
+// setInterval(checkSubscription, 24 * 60 * 60 * 1000); // Runs every 24 hours
+
+// For testing, uncomment to run every minute
+setInterval(checkSubscription, 60 * 1000);
 
 
 app.listen(9004, () => {

@@ -331,6 +331,7 @@ app.post('/auth/verify-otp', async (req, res) => {
 
     res.json({ message: "Password successfully reset" });
 })
+
 app.post('/employees/forgot-password', async (req, res) => {
     const data = req.body;
 
@@ -389,6 +390,33 @@ app.post('/employees/forgot-password', async (req, res) => {
         res.json({ message: `A verification code has been sent to ${data.email} Please check your inbox and spam folder.` });
     });
 })
+
+app.post('/employees/check-otp', async (req, res) => {
+    const data = req.body;
+
+    // Find user by email
+    const employee = await prisma.employees.findUnique({
+        where: {
+            employeeEmail: data.email
+        },
+    });
+
+    if (!employee) return res.json({ message: "Employee not found" });
+
+    // Check if OTP matches
+    if (String(employee.otp).trim() !== String(data.otp).trim()) {
+        return res.json({ message: "Invalid OTP" });
+    }
+
+    // Check if OTP has expired
+    if (employee.otpExpiry < Date.now()) {
+        return res.json({ message: "OTP has expired" });
+    }
+
+    // OTP is valid
+    res.json({ message: "OTP is valid" });
+});
+
 
 app.post('/employees/verify-otp', async (req, res) => {
     const data = req.body;

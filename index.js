@@ -337,7 +337,7 @@ app.post('/employees/forgot-password', async (req, res) => {
     // Check if user exists
     const employee = await prisma.employees.findUnique({
         where: {
-            email: data.email
+            employeeEmail: data.email
         }
     });
     if (!employee) return res.json({ message: " Employee not found" });
@@ -396,7 +396,7 @@ app.post('/employees/verify-otp', async (req, res) => {
     // Find user by email
     const employee = await prisma.employees.findUnique({
         where: {
-            email: data.email
+            employeeEmail: data.email
         },
     });
 

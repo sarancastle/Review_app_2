@@ -416,10 +416,10 @@ app.post('/employees/verify-otp', async (req, res) => {
    
 
     // Update the password in the database
-    await prisma.employee.update({
-        where: { email: data.email },
+    await prisma.employees.update({
+        where: { employeeEmail: data.email },
         data: {
-            password:data.newPassword,
+            employeePassword:data.newPassword,
             otp: null, // Clear OTP after use
             otpExpiry: null // Clear OTP expiry after use
         }

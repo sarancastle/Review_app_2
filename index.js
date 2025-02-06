@@ -352,7 +352,7 @@ app.post('/employees/forgot-password', async (req, res) => {
     // Save OTP and expiry time in the database
     await prisma.employees.update({
         where: {
-            email: data.email
+            employeeEmail: data.email
         },
         data: {
             otp: otp,  // store generated OTP

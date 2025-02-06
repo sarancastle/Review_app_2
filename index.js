@@ -340,7 +340,7 @@ app.post('/employees/forgot-password', async (req, res) => {
             employeeEmail: data.email
         }
     });
-    if (!employee) return res.json({ message: " Employee not found" });
+    if (!employee) return res.json({ message: " User not found" });
 
     // Generate a 6-digit OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
@@ -416,7 +416,7 @@ app.post('/employees/verify-otp', async (req, res) => {
    
 
     // Update the password in the database
-    await prisma.user.update({
+    await prisma.employee.update({
         where: { email: data.email },
         data: {
             password:data.newPassword,

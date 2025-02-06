@@ -22,6 +22,8 @@ model Employees {
   employeeEmail             String  @unique
   employeePhoneNumber       String
   employeePassword          String
+  otp                       String?
+  otpExpiry                 DateTime? 
   referralCode              String  @unique
   role                      Role    @default(STAFF)
   responsibleEmployeeId     String? 

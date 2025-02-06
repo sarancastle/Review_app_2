@@ -290,7 +290,7 @@ app.post('/auth/forgot-password', async (req, res) => {
 
     transporter.sendMail(mailOptions, (err) => {
         if (err) return res.json({ message: "Error sending email" });
-        res.json({ message: "OTP sent to your email" });
+        res.json({ message: `A verification code has been sent to ${data.email} Please check your inbox and spam folder.`});
     });
 })
 
@@ -309,7 +309,7 @@ app.post('/auth/verify-otp', async (req, res) => {
     // console.log("Provided OTP:", data.otp);
     // Check if OTP is valid and hasn't expired
     if (String(user.otp).trim() !== String(data.otp).trim()) {
-        return res.json({ message: "Invalid OTP" });
+        return res.json({ message: "Invalid code. Please try again." });
     }
 
     if (user.otpExpiry < Date.now()) {
@@ -324,6 +324,102 @@ app.post('/auth/verify-otp', async (req, res) => {
         where: { email: data.email },
         data: {
             password: hashedPassword,
+            otp: null, // Clear OTP after use
+            otpExpiry: null // Clear OTP expiry after use
+        }
+    });
+
+    res.json({ message: "Password successfully reset" });
+})
+app.post('/employees/forgot-password', async (req, res) => {
+    const data = req.body;
+
+    // Check if user exists
+    const employee = await prisma.employees.findUnique({
+        where: {
+            email: data.email
+        }
+    });
+    if (!employee) return res.json({ message: " Employee not found" });
+
+    // Generate a 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // OTP expiry time (e.g., 5 minutes)
+    const otpExpiry = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes from now
+
+
+    // Save OTP and expiry time in the database
+    await prisma.employees.update({
+        where: {
+            email: data.email
+        },
+        data: {
+            otp: otp,  // store generated OTP
+            otpExpiry: otpExpiry // store OTP expiry time
+        }
+    });
+
+    // Send OTP via email
+    const mailOptions = {
+        from: "ikeyqr@gmail.com",
+        to: data.email,
+        subject: "Password Reset OTP",
+        html: `<div style="font-family: Arial, sans-serif; color: #333; line-height: 1.6; margin: 0; padding: 20px; background-color: #f9f9f9; border: 1px solid #ddd; border-radius: 8px; max-width: 500px; margin: 20px auto;">
+    <h2 style="color:rgb(117, 105, 245); text-align: center; margin-bottom: 20px;">Password Reset OTP</h2>
+    <p style="font-size: 16px; margin-bottom: 20px; text-align: center;">
+        We received a request to reset your password. To proceed, please use the following One-Time Password (OTP):
+    </p>
+    <p style="font-size: 28px; font-weight: bold; color:rgb(117, 105, 245); text-align: center; margin: 10px 0;">
+        ${otp}
+    </p>
+    <p style="font-size: 14px; text-align: center; color: #777; margin-top: 20px;">
+        This OTP is valid for <strong>5 minutes</strong>. Please do not share it with anyone, and if you didn't request this, please ignore this message.
+    </p>
+    <div style="margin-top: 30px; font-size: 12px; color: #555; border-top: 1px solid #ddd; padding-top: 10px; text-align: center;">
+        <p>This email was sent to you by <strong>ikeyqr Team</strong>. Please do not reply directly to this email. For assistance, contact us at <a href="mailto:ikeyqr@gmail.com" style="color: #007BFF;">ikeyqr@gmail.com</a>.</p>
+        <p>Visit our website at <a href="https://www.ikeyqr.com" style="color: #007BFF;">www.ikeyqr.com</a>.</p>
+    </div>
+</div>
+`
+    };
+
+    transporter.sendMail(mailOptions, (err) => {
+        if (err) return res.json({ message: "Error sending email" });
+        res.json({ message: `A verification code has been sent to ${data.email} Please check your inbox and spam folder.` });
+    });
+})
+
+app.post('/employees/verify-otp', async (req, res) => {
+    const data = req.body;
+
+    // Find user by email
+    const employee = await prisma.employees.findUnique({
+        where: {
+            email: data.email
+        },
+    });
+
+    if (!employee) return res.json({ message: "Employee not found" });
+    // console.log("Stored OTP:", user.otp);
+    // console.log("Provided OTP:", data.otp);
+    // Check if OTP is valid and hasn't expired
+    if (String(employee.otp).trim() !== String(data.otp).trim()) {
+        return res.json({ message: "Invalid code. Please try again." });
+    }
+
+    if (employee.otpExpiry < Date.now()) {
+        return res.json({ message: "OTP has expired" });
+    }
+
+    // OTP is valid and not expired, now reset the password
+   
+
+    // Update the password in the database
+    await prisma.user.update({
+        where: { email: data.email },
+        data: {
+            password:data.newPassword,
             otp: null, // Clear OTP after use
             otpExpiry: null // Clear OTP expiry after use
         }

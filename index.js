@@ -625,6 +625,8 @@ app.get('/admin', async (req, res) => {
                     employeeEmail: true,
                     employeePhoneNumber: true,
                     role: true,
+                    referralCode:true,
+                    responsibleEmployeeId:true
                 },
             });
             await client.set("ADMIN", JSON.stringify(allAdmins), "EX", 3600)
@@ -688,24 +690,44 @@ app.get('/admin', async (req, res) => {
 // Route 3: Get a specific admin by ID
 
 
-app.get('/admin/:id', async (req, res) => {
-    try {
-        const { id } = req.params;
+// app.get('/admin/:id', async (req, res) => {
+//     try {
+//         const { id } = req.params;
 
-        const admin = await prisma.admin.findUnique({
+//         const admin = await prisma.admin.findUnique({
+//             where: {
+//                 admin_id: id,
+//             },
+//         });
+
+//         if (!admin || admin.role !== 'ADMIN') {
+//             return res.status(404).json({ success: false, message: 'Admin not found.' });
+//         }
+
+//         res.status(200).json({ success: true, data: admin });
+//     } catch (error) {
+//         console.error('Error fetching admin:', error);
+//         res.status(500).json({ success: false, message: 'An error occurred while fetching the admin.' });
+//     }
+// });
+
+app.get("/admin/:id", async (req, res) => {
+    try {
+        const { id } = req.params; // Get admin ID from URL parameters
+
+        const adminJoinedStaff = await prisma.employees.findMany({
             where: {
-                admin_id: id,
+                responsibleEmployeeId: id, // Fetch staff added by this admin
             },
         });
 
-        if (!admin || admin.role !== 'ADMIN') {
-            return res.status(404).json({ success: false, message: 'Admin not found.' });
-        }
-
-        res.status(200).json({ success: true, data: admin });
+        res.json({
+            success: true,
+            staff: adminJoinedStaff,
+        });
     } catch (error) {
-        console.error('Error fetching admin:', error);
-        res.status(500).json({ success: false, message: 'An error occurred while fetching the admin.' });
+        console.error(error);
+        res.status(500).json({ success: false, message: "Something went wrong" });
     }
 });
 
@@ -715,55 +737,65 @@ app.post('/employees/register', async (req, res) => {
     try {
         const data = req.body;
 
+        // Check if the user already exists
         const isExistingUser = await prisma.employees.findUnique({
-            where: {
-                employeeEmail: data.employeeEmail
-            }
-        })
-        // console.log(data)
-        // console.log(isExistingUser)
+            where: { employeeEmail: data.employeeEmail }
+        });
+
         if (isExistingUser) {
-            return res.json({ message: "User Already Existed" });
-        } else {
-
-
-            const yearPart = moment().format('YY'); // Last two digits of the year (e.g., '20' for 2020)
-            const monthPart = moment().format('MMM').toUpperCase(); // Abbreviated month (e.g., 'DEC')
-            const datePart = moment().format('DD'); // Day of the month (2 digits)
-            const randomPart = Math.floor(1000 + Math.random() * 9000); // 4-digit random number to ensure uniqueness
-            const referralCode = `WZ${yearPart}${monthPart}${datePart}-${randomPart}`;
-
-            // Create the staff entry in the database
-            const createEmployee = await prisma.employees.create({
-                data: {
-                    employeeName: data.employeeName,
-                    employeeEmail: data.employeeEmail,
-                    employeePhoneNumber: data.employeePhoneNumber,
-                    employeePassword: data.employeePassword,
-                    referralCode: referralCode,
-                    responsibleEmployeeId: data.responsibleEmployeeId,
-                    role: data.role
-                }
-            });
-            // console.log(createEmployee)
-
-            res.json({
-                message: "New Admin Created",
-                data: {
-                    createEmployee
-                }
-            });
-
+            return res.status(400).json({ message: "User Already Exists" });
         }
+
+        let responsibleAdmin = null;
+
+        // Check if referral code exists
+        if (data.referralCode) {
+            const responsibleEmployee = await prisma.employees.findUnique({
+                where: { referralCode: data.referralCode }
+            });
+
+            if (responsibleEmployee) {
+                responsibleAdmin = responsibleEmployee.employee_id;
+            }
+        }
+
+        // Generate referral code if not provided
+        const yearPart = moment().format('YY'); // Last two digits of the year
+        const monthPart = moment().format('MMM').toUpperCase(); // Abbreviated month
+        const datePart = moment().format('DD'); // Day of the month
+        const randomPart = Math.floor(1000 + Math.random() * 9000); // 4-digit random number
+        const referralCode = `WZ${yearPart}${monthPart}${datePart}-${randomPart}`;
+
+        // Create the employee entry in the database
+        const createEmployee = await prisma.employees.create({
+            data: {
+                employeeName: data.employeeName,
+                employeeEmail: data.employeeEmail,
+                employeePhoneNumber: data.employeePhoneNumber,
+                employeePassword: data.employeePassword,
+                referralCode: referralCode,
+                responsibleEmployeeId: responsibleAdmin,
+                role: data.role
+            }
+
+
+        });
+        const { employeePassword,otp,otpExpiry, ...employeeDetails } = createEmployee;
+
+        return res.status(200).json({
+            message: "New Employee Created",
+            data: employeeDetails
+        });
 
     } catch (error) {
         console.error(error);
-        res.status(500).json({
-            message: "Error creating ",
+        return res.status(500).json({
+            message: "Error creating employee",
             error: error.message
         });
     }
 });
+
 
 app.post('/change-password', async (req, res) => {
     const { employeeEmail, oldPassword, newPassword } = req.body;

@@ -556,19 +556,40 @@ app.post('/users-help-center', async (req, res) => {
     }
 });
 
+// app.get('/users/:user_id/helpdesk/all', async (req, res) => {
+//     const { user_id } = req.params;
+
+//     try {
+//         const userTickets = await prisma.helpdesk.findMany({
+//             where: { user_id }
+//         });
+
+//         res.json({ userTickets });
+//     } catch (error) {
+//         res.status(500).json({ message: 'Error fetching tickets', error: error.message });
+//     }
+// });
+
 app.get('/users/:user_id/helpdesk', async (req, res) => {
     const { user_id } = req.params;
+    const { status } = req.query;
+
+    const validStatuses = ["OPEN", "IN_PROGRESS", "RESOLVED"];
 
     try {
-        const userTickets = await prisma.helpdesk.findMany({
-            where: { user_id }
+        const tickets = await prisma.helpdesk.findMany({
+            where: {
+                user_id,
+                ...(status && status !== "all" ? { status } : {}) // If status is provided & not "all", filter by status
+            }
         });
 
-        res.json({ userTickets });
+        res.json({ tickets });
     } catch (error) {
         res.status(500).json({ message: 'Error fetching tickets', error: error.message });
     }
 });
+
 
 app.put('/users-help-center/:id/status', async (req, res) => {
     const { id } = req.params;
@@ -578,7 +599,15 @@ app.put('/users-help-center/:id/status', async (req, res) => {
     if (!validStatuses.includes(status)) {
         return res.status(400).json({ message: `Invalid status. Choose from: ${validStatuses.join(", ")}` });
     }
-
+    // const helpDeskTicket = await prisma.helpdesk.findUnique({
+    //     where: { helpdesk_id: id },
+    //     select: { 
+    //         user: {  // Assuming there is a relation between helpdesk and users
+    //             select: { email: true } 
+    //         } 
+    //     }
+    // });
+    // console.log(helpDeskTicket)
     try {
         const updatedHelpDesk = await prisma.helpdesk.update({
             where: { helpdesk_id: id },

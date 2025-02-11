@@ -16,6 +16,12 @@ enum Role {
   STAFF
 }
 
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+}
+
 model Employees {
   employee_id               String  @unique @id @default(cuid())
   employeeName              String
@@ -55,12 +61,15 @@ model User {
 }
 
 model Helpdesk {
-  helpdesk_id            String @id @default(cuid())
-  phoneNumber            String
-  comment                String
-  user_id                String
-  user                   User @relation(fields:[user_id],references:[user_id])
-  createdAt              DateTime @default(now())
+  helpdesk_id   String       @id @default(cuid())
+  name          String
+  email         String
+  phoneNumber   String
+  comment       String
+  status        TicketStatus @default(OPEN)  // Default status is "OPEN"
+  user_id       String
+  user          User         @relation(fields: [user_id], references: [user_id])
+  createdAt     DateTime     @default(now())
 }
 
 model Token {

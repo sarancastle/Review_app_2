@@ -527,38 +527,75 @@ app.get("/users/:id/dashboard", async (req, res) => {
 })
 
 app.post('/users-help-center', async (req, res) => {
-    const data = req.body;
-    
-    // Assuming the user ID is coming with the request body
-    const { phoneNumber, name , email , status, comment, user_id } = data;
+    const { phoneNumber, name, email, comment, user_id, status = 'OPEN' } = req.body;
 
-    // Ensure user_id is provided
     if (!user_id) {
         return res.status(400).json({ message: 'User ID is required' });
     }
 
     try {
+        const userExists = await prisma.user.findUnique({ where: { user_id } });
+        if (!userExists) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
         const userHelpDesk = await prisma.helpdesk.create({
             data: {
-                phoneNumber: phoneNumber,
-                comment: comment,
-                user_id: user_id  // Directly assigning user_id
+                phoneNumber,
+                name,
+                email,
+                comment,
+                status,  
+                user_id
             }
         });
-        
-        res.json({
-            userHelpDesk
-        });
+
+        res.json({ userHelpDesk });
     } catch (error) {
-        res.status(500).json({ message: 'Error creating helpdesk entry', error: error.message });
+        res.status(500).json({ message: 'Error creating helpdesk ticket', error: error.message });
+    }
+});
+
+app.get('/users/:user_id/helpdesk', async (req, res) => {
+    const { user_id } = req.params;
+
+    try {
+        const userTickets = await prisma.helpdesk.findMany({
+            where: { user_id }
+        });
+
+        res.json({ userTickets });
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching tickets', error: error.message });
+    }
+});
+
+app.put('/users-help-center/:id/status', async (req, res) => {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    const validStatuses = ["OPEN", "IN_PROGRESS", "RESOLVED"];
+    if (!validStatuses.includes(status)) {
+        return res.status(400).json({ message: `Invalid status. Choose from: ${validStatuses.join(", ")}` });
+    }
+
+    try {
+        const updatedHelpDesk = await prisma.helpdesk.update({
+            where: { helpdesk_id: id },
+            data: { status }
+        });
+
+        res.json({ updatedHelpDesk });
+    } catch (error) {
+        res.status(500).json({ message: 'Error updating ticket status', error: error.message });
     }
 });
 
 
-app.get('/users-help-center', async (req, res) => {
-    const userHelpDesk = await prisma.helpdesk.findMany()
-    res.json({ userHelpDesk })
-})
+// app.get('/users-help-center', async (req, res) => {
+//     const userHelpDesk = await prisma.helpdesk.findMany()
+//     res.json({ userHelpDesk })
+// })
 
 
 app.post('/review/:id', async (req, res) => {
@@ -715,19 +752,48 @@ app.get("/admin/:id", async (req, res) => {
     try {
         const { id } = req.params; // Get admin ID from URL parameters
 
+        // Fetch staff added by this admin
         const adminJoinedStaff = await prisma.employees.findMany({
             where: {
-                responsibleEmployeeId: id, // Fetch staff added by this admin
+                responsibleEmployeeId: id, // Fetch employees added by this admin
+            },
+            select: {
+                employee_id: true,
+                employeeName: true,
+                employeeEmail: true,
+                employeePhoneNumber: true,
+                referralCode: true, // Include referral code for fetching users
             },
         });
 
-       
-        const filteredStaff = adminJoinedStaff.map(({ otp, otpExpiry, ...rest }) => rest);
+        // Fetch the admin's referral code
+        const admin = await prisma.employees.findUnique({
+            where: { employee_id: id },
+            select: { referralCode: true },
+        });
 
+        let users = [];
+        if (admin?.referralCode) {
+            // Fetch users referred by the admin
+            users = await prisma.user.findMany({
+                where: { referralCode: admin.referralCode },
+                select: {
+                    user_id: true,
+                    name: true,
+                    email: true,
+                    phoneNumber: true,
+                    businessName: true,
+                    businessType: true,
+                    isActive: true,
+                    createdAt: true,
+                },
+            });
+        }
 
         res.json({
             success: true,
-            staff: filteredStaff,
+            staff: adminJoinedStaff,
+            users: users, // Include users referred by the admin
         });
     } catch (error) {
         console.error(error);

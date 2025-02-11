@@ -760,6 +760,7 @@ app.get("/admin/:id", async (req, res) => {
             select: {
                 employee_id: true,
                 employeeName: true,
+                role:true,
                 employeeEmail: true,
                 employeePhoneNumber: true,
                 referralCode: true, // Include referral code for fetching users
@@ -792,7 +793,7 @@ app.get("/admin/:id", async (req, res) => {
 
         res.json({
             success: true,
-            staff: adminJoinedStaff,
+            employees: adminJoinedStaff,
             users: users, // Include users referred by the admin
         });
     } catch (error) {

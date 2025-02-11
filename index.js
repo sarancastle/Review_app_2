@@ -721,7 +721,9 @@ app.get("/admin/:id", async (req, res) => {
             },
         });
 
-        const { otp, otpExpiry, ...filteredStaff } = adminJoinedStaff;
+       
+        const filteredStaff = adminJoinedStaff.map(({ otp, otpExpiry, ...rest }) => rest);
+
 
         res.json({
             success: true,

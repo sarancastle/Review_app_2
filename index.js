@@ -550,7 +550,7 @@ app.post('/users-help-center', async (req, res) => {
             }
         });
 
-        res.json({ userHelpDesk });
+        res.status(200).json({ userHelpDesk });
     } catch (error) {
         res.status(500).json({ message: 'Error creating helpdesk ticket', error: error.message });
     }

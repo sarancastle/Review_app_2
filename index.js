@@ -530,7 +530,7 @@ app.post('/users-help-center', async (req, res) => {
     const data = req.body;
     
     // Assuming the user ID is coming with the request body
-    const { phoneNumber, comment, user_id } = data;
+    const { phoneNumber, name , email , status, comment, user_id } = data;
 
     // Ensure user_id is provided
     if (!user_id) {
@@ -721,9 +721,11 @@ app.get("/admin/:id", async (req, res) => {
             },
         });
 
+        const { otp, otpExpiry, ...filteredStaff } = adminJoinedStaff;
+
         res.json({
             success: true,
-            staff: adminJoinedStaff,
+            staff: filteredStaff,
         });
     } catch (error) {
         console.error(error);

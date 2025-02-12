@@ -556,6 +556,15 @@ app.post('/users-help-center', async (req, res) => {
     }
 });
 
+app.get('/users-help-center', async (req, res) => { 
+    try {
+        const allTickets = await prisma.helpdesk.findMany();
+        res.json({ allTickets });
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching helpdesk requests', error: error.message });
+    }
+});
+
 // app.get('/users/:user_id/helpdesk/all', async (req, res) => {
 //     const { user_id } = req.params;
 

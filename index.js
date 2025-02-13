@@ -1116,6 +1116,28 @@ const checkSubscription = async () => {
     }
 };
 
+app.get('/user-counts', async (req, res) => {
+    try {
+      // Count all users
+      const totalUsers = await prisma.user.count();
+  
+      // Count active users (isActive = true)
+      const activeUsers = await prisma.user.count({
+        where: { isActive: true },
+      });
+  console.log(activeUsers)
+  console.log(totalUsers)
+      // Respond with the counts
+      res.status(200).json({
+        totalUsers,
+        activeUsers,
+      });
+    } catch (error) {
+      console.error("Error fetching user counts:", error);
+      res.status(500).json({ error: "Internal Server Error" });
+    }
+  });
+
 // Run this function daily at 12 AM
 // setInterval(checkSubscription, 24 * 60 * 60 * 1000); // Runs every 24 hours
 

@@ -564,6 +564,19 @@ app.get('/users-help-center', async (req, res) => {
         res.status(500).json({ message: 'Error fetching helpdesk requests', error: error.message });
     }
 });
+app.get('/users-help-center/:id', async (req, res) => { 
+    const {id} = req.params
+    try {
+        const particularTicket = await prisma.helpdesk.findUnique({
+            where:{
+                helpdesk_id:id
+            }
+        });
+        res.json({ particularTicket });
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching helpdesk requests', error: error.message });
+    }
+});
 
 // app.get('/users/:user_id/helpdesk/all', async (req, res) => {
 //     const { user_id } = req.params;
@@ -1125,8 +1138,8 @@ app.get('/user-counts', async (req, res) => {
       const activeUsers = await prisma.user.count({
         where: { isActive: true },
       });
-  console.log(activeUsers)
-  console.log(totalUsers)
+//   console.log(activeUsers)
+//   console.log(totalUsers)
       // Respond with the counts
       res.status(200).json({
         totalUsers,

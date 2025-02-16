@@ -53,12 +53,17 @@ const roleBasedAccess = require("./roleBasedAccess")
 
 
 
+app.set('trust proxy', true); // Enable this for reverse proxy support
 
+const getClientIp = (req) => {
+    let ip = req.headers['x-forwarded-for']?.split(',')[0] || req.ip;
+    return ip === '::1' ? '127.0.0.1' : ip; // Convert IPv6 loopback to IPv4
+};
 
 const rateLimiter = (maxReq, windowInSec) => {
     return async (req, res, next) => {
         try {
-            const clientIp = req.ip;
+            const clientIp = getClientIp(req);
             console.log("Client IP:", clientIp);
             
             const key = `rate-limit:${clientIp}`;

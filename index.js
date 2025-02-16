@@ -53,6 +53,44 @@ const roleBasedAccess = require("./roleBasedAccess")
 
 
 
+
+
+const rateLimiter = (maxReq, windowInSec) => {
+    return async (req, res, next) => {
+        try {
+            const clientIp = req.ip;
+            console.log("Client IP:", clientIp);
+            
+            const key = `rate-limit:${clientIp}`;
+            const reqCount = await client.incr(key);
+            console.log(key)
+            console.log(reqCount)
+            if (reqCount === 1) {
+                await client.expire(key, windowInSec);
+            }
+
+            if (reqCount > maxReq) {
+                const timeToExp = await client.ttl(key);
+                return res.status(429).json({
+                    status: false,
+                    message: `Rate limit exceeded. Try again in ${timeToExp} seconds.`,
+                });
+            }
+            next();
+            console.log("Request allowed, moving to next middleware...");
+             // Ensure this is being called
+        } catch (error) {
+            console.error("Rate limiter error:", error);
+            res.status(500).json({ status: false, message: "Internal Server Error" });
+        }
+    };
+};
+
+// Use middleware (example: allow 5 requests per 10 seconds)
+// app.use(rateLimiter(1, 10));
+
+
+
 app.post('/usercheck', async(req,res) => {
     const data = req.body;
   
@@ -112,7 +150,7 @@ app.post('/auth/register', async (req, res) => {
 
             // Set subscription expiration to 2 minutes from now
         const subscriptionEndDate = new Date();
-        subscriptionEndDate.setMinutes(subscriptionEndDate.getMinutes() + 2);
+        subscriptionEndDate.setMinutes(subscriptionEndDate.getMinutes() + 1440);
             const createNewUser = await prisma.user.create({
                 data: {
                     name: data.fullName,
@@ -228,7 +266,7 @@ app.post('/auth/refresh', async (req, res) => {
 
 })
 
-app.post('/checking', productRoute, async (req, res) => {
+app.get('/checking',rateLimiter(1,10), async (req, res) => {
     console.log("Projected Started && Checking")
     res.json({
         message: "Projected Started && Checking"
@@ -1060,12 +1098,13 @@ app.get('/staff/:id/referrals', async (req, res) => {
     try {
         const data = req.params;
         // console.log(data)
+        // console.log(data)
         // Find the staff by their admin_id
         const staff = await prisma.employees.findUnique({
             where: { employee_id: data.id },
             select: { referralCode: true },
         });
-
+// console.log(staff)
         // If no staff found
         if (!staff) {
             return res.status(404).json({ success: false, message: 'Staff not found.' });

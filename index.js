@@ -664,16 +664,15 @@ app.put('/users-help-center/:id/status', async (req, res) => {
     if (!validStatuses.includes(status)) {
         return res.status(400).json({ message: `Invalid status. Choose from: ${validStatuses.join(", ")}` });
     }
-    // const helpDeskTicket = await prisma.helpdesk.findUnique({
-    //     where: { helpdesk_id: id },
-    //     select: { 
-    //         user: {  // Assuming there is a relation between helpdesk and users
-    //             select: { email: true } 
-    //         } 
-    //     }
-    // });
-    // console.log(helpDeskTicket)
+    
     try {
+        const updateData = { status };
+
+        // Set resolvedAt only when status is changed to RESOLVED
+        if (status === "RESOLVED") {
+            updateData.resolvedAt = new Date(); // Store resolution timestamp
+            console.log(`Setting resolvedAt timestamp: ${updateData.resolvedAt}`);
+        }
         const updatedHelpDesk = await prisma.helpdesk.update({
             where: { helpdesk_id: id },
             data: { status }
@@ -841,6 +840,34 @@ app.get('/admin', async (req, res) => {
 //         res.status(500).json({ success: false, message: 'An error occurred while fetching the admin.' });
 //     }
 // });
+
+
+
+app.delete('/review/:reviewId', async (req, res) => {
+    const { reviewId } = req.params;
+
+    try {
+        // Check if review exists
+        const existingReview = await prisma.review.findUnique({
+            where: { review_id: reviewId },
+        });
+
+        if (!existingReview) {
+            return res.status(404).json({ success: false, message: 'Review not found.' });
+        }
+
+        // Delete the review
+        await prisma.review.delete({
+            where: { review_id: reviewId },
+        });
+
+        res.status(200).json({ success: true, message: 'Review deleted successfully.' });
+    } catch (error) {
+        console.error('Error deleting review:', error);
+        res.status(500).json({ success: false, message: 'An error occurred while deleting the review.' });
+    }
+});
+
 
 app.get("/admin/:id", async (req, res) => {
     try {
@@ -1195,11 +1222,49 @@ app.get('/user-counts', async (req, res) => {
     }
   });
 
+  const deleteExpiredTickets = async () => {
+    console.log("Checking expired RESOLVED tickets...");
+
+    try {
+        // Calculate the date 30 days ago from now
+        // const thirtyDaysAgo = new Date();
+        // thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+         // 30 days ago
+
+        const twoMinutesAgo = new Date();
+        twoMinutesAgo.setMinutes(twoMinutesAgo.getMinutes() - 2);
+
+        // Delete RESOLVED tickets older than 30 days
+        const result = await prisma.helpdesk.deleteMany({
+            where: {
+                status: "RESOLVED", // Only RESOLVED tickets
+                resolvedAt: { lte: twoMinutesAgo }, // Older than 30 days
+            },
+        });
+
+        // Log the result
+        console.log(result);
+
+        if (result.count > 0) {
+            console.log(`Deleted ${result.count} expired RESOLVED tickets.`);
+        } else {
+            console.log("No expired RESOLVED tickets found.");
+        }
+
+    } catch (error) {
+        console.error("Error deleting expired tickets:", error);
+    }
+};
+
 // Run this function daily at 12 AM
 // setInterval(checkSubscription, 24 * 60 * 60 * 1000); // Runs every 24 hours
 
 // For testing, uncomment to run every minute
 setInterval(checkSubscription, 60 * 1000);
+
+// Call the function periodically (every 24 hours)
+setInterval(deleteExpiredTickets, 300000)
+    //86400000); // 86400000ms = 24 hours
 
 
 app.listen(9004, () => {

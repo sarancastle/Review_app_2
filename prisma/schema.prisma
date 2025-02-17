@@ -56,7 +56,7 @@ model User {
   updatedAt              DateTime   @updatedAt
   dashboard              Dashboard?
   employee_id            String
-  employees              Employees @relation(fields:[employee_id],references:[employee_id])
+  employees              Employees @relation(fields:[employee_id],references:[employee_id],onDelete: Cascade)
   helpdesk               Helpdesk[]
 }
 
@@ -67,8 +67,9 @@ model Helpdesk {
   phoneNumber   String
   comment       String
   status        TicketStatus @default(OPEN)  // Default status is "OPEN"
+  resolvedAt    DateTime?    // Timestamp for resolution
   user_id       String
-  user          User         @relation(fields: [user_id], references: [user_id])
+  user          User         @relation(fields: [user_id], references: [user_id] ,onDelete: Cascade)
   createdAt     DateTime     @default(now())
 }
 
@@ -80,7 +81,7 @@ model Token {
 model Dashboard {
   dashboard_id           String   @id @unique @default(cuid())
   user_id                String   @unique
-  user                   User     @relation(fields: [user_id], references: [user_id])
+  user                   User     @relation(fields: [user_id], references: [user_id] , onDelete: Cascade)
   review                 Review[]
   createdAt              DateTime @default(now())
   updatedAt              DateTime @updatedAt
@@ -94,5 +95,5 @@ model Review {
   createdAt              DateTime  @default(now())
   updatedAt              DateTime @updatedAt
   dashboard_id           String   
-  dashboard              Dashboard @relation(fields: [dashboard_id], references: [dashboard_id])
+  dashboard              Dashboard @relation(fields: [dashboard_id], references: [dashboard_id] ,onDelete: Cascade)
 }

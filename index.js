@@ -535,7 +535,7 @@ app.get("/users/:id/dashboard", async (req, res) => {
         // Check if user details exist
         if (!userDetails) {
             console.log("User not found in the database."); // Debug log
-            return res.status(404).json({ error: "User not found" });
+            return res.json({ error: "User not found" });
         }
 
 
@@ -660,26 +660,44 @@ app.put('/users-help-center/:id/status', async (req, res) => {
     const { id } = req.params;
     const { status } = req.body;
 
+    // Log incoming request data
+    console.log(`Received request to update status for helpdesk ID: ${id}`);
+    console.log(`Requested status: ${status}`);
+
+    // Validate the status field
     const validStatuses = ["OPEN", "IN_PROGRESS", "RESOLVED"];
     if (!validStatuses.includes(status)) {
+        console.log(`Invalid status received: ${status}. Valid statuses are: ${validStatuses.join(", ")}`);
         return res.status(400).json({ message: `Invalid status. Choose from: ${validStatuses.join(", ")}` });
     }
-    
-    try {
-        const updateData = { status };
+    console.log(`Status is valid: ${status}`);
 
-        // Set resolvedAt only when status is changed to RESOLVED
+    try {
+        // Prepare the update data
+        const updateData = { status };
+        console.log(`Update data prepared: ${JSON.stringify(updateData)}`);
+
+        // If the status is "RESOLVED", include the resolvedAt timestamp
         if (status === "RESOLVED") {
-            updateData.resolvedAt = new Date(); // Store resolution timestamp
-            console.log(`Setting resolvedAt timestamp: ${updateData.resolvedAt}`);
+            updateData.resolvedAt = new Date(); // Set the resolution timestamp
+            console.log(`ResolvedAt timestamp set to: ${updateData.resolvedAt}`);
         }
+
+        // Perform the update in the database
+        console.log(`Performing database update for helpdesk ID: ${id}`);
         const updatedHelpDesk = await prisma.helpdesk.update({
             where: { helpdesk_id: id },
-            data: { status }
+            data: updateData, // Ensure resolvedAt is included in the data if RESOLVED
         });
 
+        // Log the updated helpdesk object
+        console.log("Updated helpdesk ticket:", updatedHelpDesk);
+
+        // Return the updated helpdesk ticket
+        console.log("Sending updated helpdesk ticket in response.");
         res.json({ updatedHelpDesk });
     } catch (error) {
+        console.error("Error updating ticket status:", error);
         res.status(500).json({ message: 'Error updating ticket status', error: error.message });
     }
 });
@@ -1263,7 +1281,7 @@ app.get('/user-counts', async (req, res) => {
 setInterval(checkSubscription, 60 * 1000);
 
 // Call the function periodically (every 24 hours)
-setInterval(deleteExpiredTickets, 300000)
+setInterval(deleteExpiredTickets, 60000)
     //86400000); // 86400000ms = 24 hours
 
 

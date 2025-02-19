@@ -530,6 +530,8 @@ app.get("/users/:id/dashboard", async (req, res) => {
             console.log("User subscription is inactive. Redirecting to renew."); // Debug log
             return res.json({
                 message: "Subscription inactive. Please renew.",
+                userName:userDetails.user.name,
+                businessName:userDetails.user.businessName
             });
         }
 

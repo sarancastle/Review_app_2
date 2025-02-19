@@ -717,17 +717,17 @@ app.post('/review/:id', async (req, res) => {
     try {
         const user = await prisma.user.findUnique({
             where: { user_id: id },
-            select: { isActive: true, placeId: true },
+            select: { isActive: true, placeId: true, name:true },
         });
 
         if (!user) {
             return res.status(404).json({ error: "User not found" });
         }
-
+        console.log(user)
         if (!user.isActive) {
             //   return res.status(403).json({
             //     error: "Subscription inactive. Please renew to access the review form.",
-            return res.json({ message: "Subscription inactive. Please renew to access the review form." })
+            return res.json({ message: "Subscription inactive. Please renew to access the review form.", userName:user.name })
 
         }
 

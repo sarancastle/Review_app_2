@@ -135,7 +135,7 @@ app.post('/auth/register', async (req, res) => {
         } else {
 
               // Assign default referral code if the given referral code is "Google", "Facebook", or "Instagram"
-        const defaultReferralCode = "WZ25FEB04-4487";
+        const defaultReferralCode = "WZ25FEB17-5531";
         const referralSources = ["Google", "Facebook", "Instagram"];
         if (referralSources.includes(data.referralCode)) {
             data.referralCode = defaultReferralCode;

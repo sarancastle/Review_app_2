@@ -516,6 +516,7 @@ app.get("/users/:id/dashboard", async (req, res) => {
                         businessName: true,
                         businessType: true,
                         phoneNumber: true,
+                        email:true,
                         isActive: true, // Include subscription status
                     },
                 },

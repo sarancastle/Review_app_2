@@ -791,6 +791,33 @@ app.post('/review/:id', async (req, res) => {
         res.status(500).json({ error: "Failed to process review" });
     }
 });
+app.get('/subscription/check/:id', async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        // Fetch user by ID
+        const user = await prisma.user.findUnique({
+            where: { user_id: id },
+            select: { isActive: true, name: true },
+        });
+
+        if (!user) {
+            return res.status(404).json({ error: "User not found" });
+        }
+
+        // Return user status
+        return res.json({ 
+            isActive: user.isActive, 
+            message: user.isActive ? "User is active" : "Subscription inactive. Please renew to access services.",
+            userName: user.name
+        });
+
+    } catch (error) {
+        console.error("Error checking user status:", error);
+        res.status(500).json({ error: "Failed to check user status" });
+    }
+});
+
 
 
 app.get('/admin', async (req, res) => {

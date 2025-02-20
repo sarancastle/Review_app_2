@@ -614,7 +614,7 @@ app.post('/users-help-center', async (req, res) => {
     }
 });
 
-app.get('/users-help-center', async (req, res) => {
+app.get('/users-help-center',productRoute, async (req, res) => {
     try {
         const allTickets = await prisma.helpdesk.findMany();
         res.json({ allTickets });
@@ -622,7 +622,7 @@ app.get('/users-help-center', async (req, res) => {
         res.status(500).json({ message: 'Error fetching helpdesk requests', error: error.message });
     }
 });
-app.get('/users-help-center/:id', async (req, res) => {
+app.get('/users-help-center/:id',productRoute, async (req, res) => {
     const { id } = req.params
     try {
         const particularTicket = await prisma.helpdesk.findUnique({
@@ -820,7 +820,7 @@ app.get('/subscription/check/:id', async (req, res) => {
 
 
 
-app.get('/admin', async (req, res) => {
+app.get('/admin',productRoute, async (req, res) => {
     try {
 
         const getCatchRedise = await client.get("ADMIN")
@@ -951,7 +951,7 @@ app.delete('/review/:reviewId', async (req, res) => {
 });
 
 
-app.get("/admin/:id", async (req, res) => {
+app.get("/admin/:id",productRoute, async (req, res) => {
     try {
         const { id } = req.params; // Get admin ID from URL parameters
 
@@ -1007,7 +1007,7 @@ app.get("/admin/:id", async (req, res) => {
 
 // Route 4: Get a specific staff by ID
 
-app.post('/employees/register', async (req, res) => {
+app.post('/employees/register',productRoute, async (req, res) => {
     try {
         const data = req.body;
 
@@ -1102,7 +1102,7 @@ app.post('/change-password', async (req, res) => {
     }
 });
 // Route 2: Get all staff
-app.get('/staff', async (req, res) => {
+app.get('/staff',productRoute, async (req, res) => {
     try {
         const getCatchRedise = await client.get("STAFF")
         if (getCatchRedise) {
@@ -1137,7 +1137,7 @@ app.get('/staff', async (req, res) => {
     }
 });
 
-app.get('/employees/:id', async (req, res) => {
+app.get('/employees/:id',productRoute, async (req, res) => {
     const { id } = req.params;
 
     try {
@@ -1282,7 +1282,7 @@ const checkSubscription = async () => {
     }
 };
 
-app.get('/user-counts', async (req, res) => {
+app.get('/user-counts',productRoute, async (req, res) => {
     try {
         // Count all users
         const totalUsers = await prisma.user.count();

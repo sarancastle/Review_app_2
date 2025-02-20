@@ -1,4 +1,5 @@
 const express = require("express")
+const Razorpay = require("razorpay")
 const app = express()
 const { PrismaClient } = require("@prisma/client")
 const prisma = new PrismaClient()
@@ -8,6 +9,7 @@ const Redis = require('ioredis')
 var jwt = require('jsonwebtoken');
 const moment = require('moment'); // Install moment.js for date formatting
 const nodemailer = require('nodemailer');
+var razorpay = new Razorpay({ key_id: 'YOUR_KEY_ID', key_secret: 'YOUR_SECRET' })
 const transporter = nodemailer.createTransport({
     service: "gmail",
     auth: {
@@ -22,32 +24,32 @@ app.use(cors())
 // const client = new Redis("rediss://default:AeANAAIjcDEwYmY4YTRhZGQyMTg0YjVlOTgxYmI0MDNiMjdjNDliY3AxMA@desired-toad-57357.upstash.io:6379");
 
 const client = new Redis("rediss://default:AeANAAIjcDEwYmY4YTRhZGQyMTg0YjVlOTgxYmI0MDNiMjdjNDliY3AxMA@desired-toad-57357.upstash.io:6379", {
-    
+
     // connectTimeout: 10000, // 10 seconds timeout
     // keepAlive: 30000, // Send keep-alive packets every 30 seconds
     retryStrategy(times) {
-      // Exponential backoff for reconnecting
-      const delay = Math.min(times * 50, 2000);
-      console.log(`Reconnecting to Redis in ${delay}ms...`);
-      return delay;
+        // Exponential backoff for reconnecting
+        const delay = Math.min(times * 50, 2000);
+        console.log(`Reconnecting to Redis in ${delay}ms...`);
+        return delay;
     },
     reconnectOnError(err) {
-      console.error('Redis error:', err);
-      return err.message.includes('ECONNRESET') || err.message.includes('ETIMEDOUT');
+        console.error('Redis error:', err);
+        return err.message.includes('ECONNRESET') || err.message.includes('ETIMEDOUT');
     }
-  });
-  
-  client.on('error', (err) => {
+});
+
+client.on('error', (err) => {
     console.error('Redis error:', err);
-  });
-  
-  client.on('connect', () => {
+});
+
+client.on('connect', () => {
     console.log('Connected to Redis');
-  });
-  
-  client.on('reconnecting', () => {
+});
+
+client.on('reconnecting', () => {
     console.log('Reconnecting to Redis...');
-  });
+});
 const productRoute = require("./protectedRoute")
 const roleBasedAccess = require("./roleBasedAccess")
 
@@ -65,7 +67,7 @@ const rateLimiter = (maxReq, windowInSec) => {
         try {
             const clientIp = getClientIp(req);
             console.log("Client IP:", clientIp);
-            
+
             const key = `rate-limit:${clientIp}`;
             const reqCount = await client.incr(key);
             console.log(key)
@@ -83,7 +85,7 @@ const rateLimiter = (maxReq, windowInSec) => {
             }
             next();
             console.log("Request allowed, moving to next middleware...");
-             // Ensure this is being called
+            // Ensure this is being called
         } catch (error) {
             console.error("Rate limiter error:", error);
             res.status(500).json({ status: false, message: "Internal Server Error" });
@@ -95,29 +97,39 @@ const rateLimiter = (maxReq, windowInSec) => {
 // app.use(rateLimiter(1, 10));
 
 
-
-app.post('/usercheck', async(req,res) => {
+app.post('/order', async (req, res) => {
     const data = req.body;
-  
+    const amount = 199
+    const order = await razorpay.orders.create({
+        amount: amount * 100,
+        currency: "INR",
+
+    })
+})
+
+
+app.post('/usercheck', async (req, res) => {
+    const data = req.body;
+
     try {
-      const existingUser = await prisma.user.findUnique({
-        where: { email: data.email },
-      });
-  
-      if (existingUser) {
-        return res.json({ message: "Already a User" });
-      }else{
-        res.json({
-            message: `You can register`,
-          });
-      }
-  
-      
+        const existingUser = await prisma.user.findUnique({
+            where: { email: data.email },
+        });
+
+        if (existingUser) {
+            return res.json({ message: "Already a User" });
+        } else {
+            res.json({
+                message: `You can register`,
+            });
+        }
+
+
     } catch (error) {
-      console.error("Error registering user:", error);
-      res.status(500).json({ error: "Something went wrong" });
+        console.error("Error registering user:", error);
+        res.status(500).json({ error: "Something went wrong" });
     }
-  })
+})
 
 
 app.post('/auth/register', async (req, res) => {
@@ -134,28 +146,28 @@ app.post('/auth/register', async (req, res) => {
             return res.json({ message: "User Already Existed" });
         } else {
 
-              // Assign default referral code if the given referral code is "Google", "Facebook", or "Instagram"
-        const defaultReferralCode = "WZ25FEB17-5531";
-        const referralSources = ["Google", "Facebook", "Instagram"];
-        if (referralSources.includes(data.referralCode)) {
-            data.referralCode = defaultReferralCode;
-        }
+            // Assign default referral code if the given referral code is "Google", "Facebook", or "Instagram"
+            const defaultReferralCode = "WZ25FEB17-5531";
+            const referralSources = ["Google", "Facebook", "Instagram"];
+            if (referralSources.includes(data.referralCode)) {
+                data.referralCode = defaultReferralCode;
+            }
 
-        console.log("Final Referral Code:", data.referralCode);
+            console.log("Final Referral Code:", data.referralCode);
 
-        const Staff = await prisma.employees.findUnique({
-            where: { referralCode: data.referralCode }
-        });
+            const Staff = await prisma.employees.findUnique({
+                where: { referralCode: data.referralCode }
+            });
 
-        if (!Staff) {
-            return res.json({ message: "Invalid Referral Code" });
-        }
+            if (!Staff) {
+                return res.json({ message: "Invalid Referral Code" });
+            }
 
             const hashedPassword = await bcrypt.hash(data.password, 10);
 
             // Set subscription expiration to 2 minutes from now
-        const subscriptionEndDate = new Date();
-        subscriptionEndDate.setMinutes(subscriptionEndDate.getMinutes() + 1440);
+            const subscriptionEndDate = new Date();
+            subscriptionEndDate.setMinutes(subscriptionEndDate.getMinutes() + 1440);
             const createNewUser = await prisma.user.create({
                 data: {
                     name: data.fullName,
@@ -169,7 +181,7 @@ app.post('/auth/register', async (req, res) => {
                     referralCode: data.referralCode,
                     isActive: true,
                     subscriptionStartDate: new Date(),
-                    subscriptionEndDate:subscriptionEndDate
+                    subscriptionEndDate: subscriptionEndDate
                 }
             });
             const dashboard = await prisma.dashboard.create({
@@ -271,7 +283,7 @@ app.post('/auth/refresh', async (req, res) => {
 
 })
 
-app.get('/checking',rateLimiter(1,10), async (req, res) => {
+app.get('/checking', rateLimiter(1, 10), async (req, res) => {
     console.log("Projected Started && Checking")
     res.json({
         message: "Projected Started && Checking"
@@ -333,7 +345,7 @@ app.post('/auth/forgot-password', async (req, res) => {
 
     transporter.sendMail(mailOptions, (err) => {
         if (err) return res.json({ message: "Error sending email" });
-        res.json({ message: `A verification code has been sent to ${data.email} Please check your inbox and spam folder.`});
+        res.json({ message: `A verification code has been sent to ${data.email} Please check your inbox and spam folder.` });
     });
 })
 
@@ -484,13 +496,13 @@ app.post('/employees/verify-otp', async (req, res) => {
     }
 
     // OTP is valid and not expired, now reset the password
-   
+
 
     // Update the password in the database
     await prisma.employees.update({
         where: { employeeEmail: data.email },
         data: {
-            employeePassword:data.newPassword,
+            employeePassword: data.newPassword,
             otp: null, // Clear OTP after use
             otpExpiry: null // Clear OTP expiry after use
         }
@@ -516,7 +528,7 @@ app.get("/users/:id/dashboard", async (req, res) => {
                         businessName: true,
                         businessType: true,
                         phoneNumber: true,
-                        email:true,
+                        email: true,
                         isActive: true, // Include subscription status
                     },
                 },
@@ -530,8 +542,8 @@ app.get("/users/:id/dashboard", async (req, res) => {
             console.log("User subscription is inactive. Redirecting to renew."); // Debug log
             return res.json({
                 message: "Subscription inactive. Please renew.",
-                userName:userDetails.user.name,
-                businessName:userDetails.user.businessName
+                userName: userDetails.user.name,
+                businessName: userDetails.user.businessName
             });
         }
 
@@ -554,14 +566,14 @@ app.get("/users/:id/dashboard", async (req, res) => {
         }
         console.log(negativePercentage)
         const positivePercentage = 5 - negativePercentage;
-        
+
 
         res.json({
             userDetails,
             positiveReviewPercentage: positivePercentage.toFixed(2),
             reviewForm_url: `review/${userDetails.user_id}`,
-            negativePercentage:negativePercentage
-            
+            negativePercentage: negativePercentage
+
 
         });
 
@@ -591,7 +603,7 @@ app.post('/users-help-center', async (req, res) => {
                 name,
                 email,
                 comment,
-                status,  
+                status,
                 user_id
             }
         });
@@ -602,7 +614,7 @@ app.post('/users-help-center', async (req, res) => {
     }
 });
 
-app.get('/users-help-center', async (req, res) => { 
+app.get('/users-help-center', async (req, res) => {
     try {
         const allTickets = await prisma.helpdesk.findMany();
         res.json({ allTickets });
@@ -610,12 +622,12 @@ app.get('/users-help-center', async (req, res) => {
         res.status(500).json({ message: 'Error fetching helpdesk requests', error: error.message });
     }
 });
-app.get('/users-help-center/:id', async (req, res) => { 
-    const {id} = req.params
+app.get('/users-help-center/:id', async (req, res) => {
+    const { id } = req.params
     try {
         const particularTicket = await prisma.helpdesk.findUnique({
-            where:{
-                helpdesk_id:id
+            where: {
+                helpdesk_id: id
             }
         });
         res.json({ particularTicket });
@@ -696,6 +708,28 @@ app.put('/users-help-center/:id/status', async (req, res) => {
         // Log the updated helpdesk object
         console.log("Updated helpdesk ticket:", updatedHelpDesk);
 
+        // Send email
+        let mailOptions = {
+            from: 'your-email@gmail.com',
+            to: updatedHelpDesk.email,
+            subject: `ikeyQR Helpdesk Ticket Update`,
+            html: `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
+                    <h2 style="color: #333;">Hello ${updatedHelpDesk.name},</h2>
+                    <p>We wanted to inform you that your helpdesk ticket regarding:</p>
+                    <blockquote style="background: #f9f9f9; padding: 10px; border-left: 4px solid #ccc;">
+                        "${updatedHelpDesk.comment}"
+                    </blockquote>
+                    <p>has been updated to: <strong style="color: green;">${status}</strong>.</p>
+                    <p>If you need further assistance, please feel free to reach out.</p>
+                    <hr>
+                    <p style="font-size: 12px; color: #777;">Best regards,<br>ikeyQR Helpdesk Support Team</p>
+                </div>
+            `
+        };
+
+        await transporter.sendMail(mailOptions);
+
         // Return the updated helpdesk ticket
         console.log("Sending updated helpdesk ticket in response.");
         res.json({ updatedHelpDesk });
@@ -719,7 +753,7 @@ app.post('/review/:id', async (req, res) => {
     try {
         const user = await prisma.user.findUnique({
             where: { user_id: id },
-            select: { isActive: true, placeId: true, name:true },
+            select: { isActive: true, placeId: true, name: true },
         });
 
         if (!user) {
@@ -729,11 +763,11 @@ app.post('/review/:id', async (req, res) => {
         if (!user.isActive) {
             //   return res.status(403).json({
             //     error: "Subscription inactive. Please renew to access the review form.",
-            return res.json({ message: "Subscription inactive. Please renew to access the review form.", userName:user.name })
+            return res.json({ message: "Subscription inactive. Please renew to access the review form.", userName: user.name })
 
         }
 
-        if (rating >= 3) {
+        if (rating >= 4) {
             const redirectUrl = `https://search.google.com/local/writereview?placeid=${user.placeId}`;
             return res.json({ redirectUrl });
         }
@@ -776,8 +810,8 @@ app.get('/admin', async (req, res) => {
                     employeeEmail: true,
                     employeePhoneNumber: true,
                     role: true,
-                    referralCode:true,
-                    responsibleEmployeeId:true
+                    referralCode: true,
+                    responsibleEmployeeId: true
                 },
             });
             await client.set("ADMIN", JSON.stringify(allAdmins), "EX", 3600)
@@ -902,7 +936,7 @@ app.get("/admin/:id", async (req, res) => {
             select: {
                 employee_id: true,
                 employeeName: true,
-                role:true,
+                role: true,
                 employeeEmail: true,
                 employeePhoneNumber: true,
                 referralCode: true, // Include referral code for fetching users
@@ -993,7 +1027,7 @@ app.post('/employees/register', async (req, res) => {
 
 
         });
-        const { employeePassword,otp,otpExpiry, ...employeeDetails } = createEmployee;
+        const { employeePassword, otp, otpExpiry, ...employeeDetails } = createEmployee;
 
         return res.status(200).json({
             message: "New Employee Created",
@@ -1157,7 +1191,7 @@ app.get('/staff/:id/referrals', async (req, res) => {
             where: { employee_id: data.id },
             select: { referralCode: true },
         });
-// console.log(staff)
+        // console.log(staff)
         // If no staff found
         if (!staff) {
             return res.status(404).json({ success: false, message: 'Staff not found.' });
@@ -1223,34 +1257,34 @@ const checkSubscription = async () => {
 
 app.get('/user-counts', async (req, res) => {
     try {
-      // Count all users
-      const totalUsers = await prisma.user.count();
-  
-      // Count active users (isActive = true)
-      const activeUsers = await prisma.user.count({
-        where: { isActive: true },
-      });
-//   console.log(activeUsers)
-//   console.log(totalUsers)
-      // Respond with the counts
-      res.status(200).json({
-        totalUsers,
-        activeUsers,
-      });
-    } catch (error) {
-      console.error("Error fetching user counts:", error);
-      res.status(500).json({ error: "Internal Server Error" });
-    }
-  });
+        // Count all users
+        const totalUsers = await prisma.user.count();
 
-  const deleteExpiredTickets = async () => {
+        // Count active users (isActive = true)
+        const activeUsers = await prisma.user.count({
+            where: { isActive: true },
+        });
+        //   console.log(activeUsers)
+        //   console.log(totalUsers)
+        // Respond with the counts
+        res.status(200).json({
+            totalUsers,
+            activeUsers,
+        });
+    } catch (error) {
+        console.error("Error fetching user counts:", error);
+        res.status(500).json({ error: "Internal Server Error" });
+    }
+});
+
+const deleteExpiredTickets = async () => {
     console.log("Checking expired RESOLVED tickets...");
 
     try {
         // Calculate the date 30 days ago from now
         // const thirtyDaysAgo = new Date();
         // thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-         // 30 days ago
+        // 30 days ago
 
         const twoMinutesAgo = new Date();
         twoMinutesAgo.setMinutes(twoMinutesAgo.getMinutes() - 2);
@@ -1285,7 +1319,7 @@ setInterval(checkSubscription, 60 * 1000);
 
 // Call the function periodically (every 24 hours)
 setInterval(deleteExpiredTickets, 60000)
-    //86400000); // 86400000ms = 24 hours
+//86400000); // 86400000ms = 24 hours
 
 
 app.listen(9004, () => {

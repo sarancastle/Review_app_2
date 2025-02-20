@@ -7,13 +7,13 @@ function productRoute(req,res,next){
     const token = (data && data.split(' ')[1])
 
 if(!token){
-    res.json({
+    res.status(403).json({
         message:"Token Not Found"
     })
 }else{
     jwt.verify(token, 'ikeyqr', function(err) {
        if(err){
-        res.json({
+        res.status(403).json({
             message:"Token Invalid"
         })
        }else{

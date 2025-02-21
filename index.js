@@ -131,7 +131,6 @@ app.post('/usercheck', async (req, res) => {
     }
 })
 
-
 app.post('/auth/register', async (req, res) => {
     try {
         const data = req.body;
@@ -264,7 +263,7 @@ app.post('/auth/refresh', async (req, res) => {
         jwt.verify(tokenValid.refreshToken, 'ikeyqr', function (err) {
             if (!err) {
                 var accessToken = jwt.sign({ user_id: tokenValid.user_id }, 'ikeyqr', {
-                    expiresIn: "60s"
+                    expiresIn: "30s"
                 });
                 res.json({
                     accessToken: accessToken
@@ -500,7 +499,6 @@ app.post('/employees/check-otp', async (req, res) => {
     // OTP is valid
     res.json({ message: "OTP is valid" });
 });
-
 
 app.post('/employees/verify-otp', async (req, res) => {
     const data = req.body;
@@ -768,13 +766,6 @@ app.put('/users-help-center/:id/status', async (req, res) => {
     }
 });
 
-
-// app.get('/users-help-center', async (req, res) => {
-//     const userHelpDesk = await prisma.helpdesk.findMany()
-//     res.json({ userHelpDesk })
-// })
-
-
 app.post('/review/:id', async (req, res) => {
     const { name, rating, comment } = req.body;
     const { id } = req.params;
@@ -827,7 +818,7 @@ app.get('/subscription/check/:id', async (req, res) => {
         // Fetch user by ID
         const user = await prisma.user.findUnique({
             where: { user_id: id },
-            select: { isActive: true, name: true },
+            select: { isActive: true,businessName:true},
         });
 
         if (!user) {
@@ -838,7 +829,9 @@ app.get('/subscription/check/:id', async (req, res) => {
         return res.json({ 
             isActive: user.isActive, 
             message: user.isActive ? "User is active" : "Subscription inactive. Please renew to access services.",
-            userName: user.name
+            
+            businessName:user.businessName,
+            
         });
 
     } catch (error) {
@@ -846,8 +839,6 @@ app.get('/subscription/check/:id', async (req, res) => {
         res.status(500).json({ error: "Failed to check user status" });
     }
 });
-
-
 
 app.get('/admin',productRoute, async (req, res) => {
     try {
@@ -884,7 +875,10 @@ app.get('/admin',productRoute, async (req, res) => {
     }
 });
 
-
+// app.get('/users-help-center', async (req, res) => {
+//     const userHelpDesk = await prisma.helpdesk.findMany()
+//     res.json({ userHelpDesk })
+// })
 
 // app.get('/staff/123', async (req, res) => {
 //     try {
@@ -979,7 +973,6 @@ app.delete('/review/:reviewId', async (req, res) => {
     }
 });
 
-
 app.get("/admin/:id",productRoute, async (req, res) => {
     try {
         const { id } = req.params; // Get admin ID from URL parameters
@@ -1033,8 +1026,6 @@ app.get("/admin/:id",productRoute, async (req, res) => {
         res.status(500).json({ success: false, message: "Something went wrong" });
     }
 });
-
-// Route 4: Get a specific staff by ID
 
 app.post('/employees/register',productRoute, async (req, res) => {
     try {
@@ -1099,7 +1090,6 @@ app.post('/employees/register',productRoute, async (req, res) => {
     }
 });
 
-
 app.post('/change-password', async (req, res) => {
     const { employeeEmail, oldPassword, newPassword } = req.body;
 
@@ -1130,7 +1120,7 @@ app.post('/change-password', async (req, res) => {
         res.status(500).json({ message: "Server error" });
     }
 });
-// Route 2: Get all staff
+
 app.get('/staff',productRoute, async (req, res) => {
     try {
         const getCatchRedise = await client.get("STAFF")
@@ -1189,7 +1179,6 @@ app.get('/employees/:id',productRoute, async (req, res) => {
     }
 });
 
-
 app.post('/employees/login', async (req, res) => {
     const data = req.body;
     console.log(data)
@@ -1209,7 +1198,7 @@ app.post('/employees/login', async (req, res) => {
         if (data.password === isExistingUser.employeePassword) {
 
             var accessToken = jwt.sign({ employee_id: isExistingUser.employee_id, role: isExistingUser.role }, 'ikeyqr', {
-                expiresIn: "60s"
+                expiresIn: "30s"
             });
             var refreshToken = jwt.sign({ employee_id: isExistingUser.employee_id, role: isExistingUser.role }, 'ikeyqr', {
                 expiresIn: "60s"

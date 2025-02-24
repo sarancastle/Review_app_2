@@ -26,26 +26,26 @@ const checkSubscription = async () => {
 };
 
 // Function to delete expired resolved tickets
-const deleteExpiredTickets = async () => {
-    console.log("Checking expired RESOLVED tickets...");
+// const deleteExpiredTickets = async () => {
+//     console.log("Checking expired RESOLVED tickets...");
 
-    try {
-        const twoMinutesAgo = new Date();
-        twoMinutesAgo.setMinutes(twoMinutesAgo.getMinutes() - 2);
+//     try {
+//         const twoMinutesAgo = new Date();
+//         twoMinutesAgo.setMinutes(twoMinutesAgo.getMinutes() - 2);
 
-        // Ensure resolvedAt exists in the schema before running delete
-        const result = await prisma.helpdesk.deleteMany({
-            where: {
-                status: "RESOLVED",
-                resolvedAt: { not: null, lte: twoMinutesAgo }, // Ensure resolvedAt is not null
-            },
-        });
+//         // Ensure resolvedAt exists in the schema before running delete
+//         const result = await prisma.helpdesk.deleteMany({
+//             where: {
+//                 status: "RESOLVED",
+//                 resolvedAt: { not: null, lte: twoMinutesAgo }, // Ensure resolvedAt is not null
+//             },
+//         });
 
-        console.log(`Deleted ${result.count} expired RESOLVED tickets.`);
-    } catch (error) {
-        console.error("Error deleting expired tickets:", error.message || error);
-    }
-};
+//         console.log(`Deleted ${result.count} expired RESOLVED tickets.`);
+//     } catch (error) {
+//         console.error("Error deleting expired tickets:", error.message || error);
+//     }
+// };
 
 // Export functions
 module.exports = {

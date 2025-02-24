@@ -14,12 +14,12 @@ const razorpay = new Razorpay({
 const createOrder = async (req, res) => {
     try {
         const data = req.body;
-        console.log(data)
+        console.log(data.amount)
+      
         const order = await razorpay.orders.create({
-            amount: 99900,
+            amount: data.amount *100,
             currency: "INR",
-            receipt: crypto.randomUUID(),
-            payment_capture: 1
+           
         });
         const tempOrder = await prisma.temporder.create({
             data: {

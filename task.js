@@ -33,22 +33,17 @@ const deleteExpiredTickets = async () => {
         const twoMinutesAgo = new Date();
         twoMinutesAgo.setMinutes(twoMinutesAgo.getMinutes() - 2);
 
+        // Ensure resolvedAt exists in the schema before running delete
         const result = await prisma.helpdesk.deleteMany({
             where: {
                 status: "RESOLVED",
-                resolvedAt: { lte: twoMinutesAgo },
+                resolvedAt: { not: null, lte: twoMinutesAgo }, // Ensure resolvedAt is not null
             },
         });
 
-        console.log(result);
-        if (result.count > 0) {
-            console.log(`Deleted ${result.count} expired RESOLVED tickets.`);
-        } else {
-            console.log("No expired RESOLVED tickets found.");
-        }
-
+        console.log(`Deleted ${result.count} expired RESOLVED tickets.`);
     } catch (error) {
-        console.error("Error deleting expired tickets:", error);
+        console.error("Error deleting expired tickets:", error.message || error);
     }
 };
 

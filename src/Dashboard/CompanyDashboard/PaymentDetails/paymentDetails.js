@@ -47,6 +47,9 @@ const createOrder = async (req, res) => {
 // 2. Razorpay Webhook for Payment Confirmation
 const paymentVerify = async (req, res) => {
     try {
+        console.log(webhookBody)
+        console.log(webhookSignature)
+        
         const webhookBody = req.rawBody;
         const webhookSignature = req.headers["x-razorpay-signature"];
         const webhookSecret = "J3JKqWCm0aGWbMoktLkyUEts";
@@ -60,7 +63,7 @@ const paymentVerify = async (req, res) => {
             .createHmac("sha256", webhookSecret)
             .update(webhookBody)
             .digest("hex");
-
+console.log(expectedSignature)
         if (expectedSignature !== webhookSignature) {
             return res.status(400).json({ message: "Invalid webhook signature" });
         }
@@ -69,6 +72,9 @@ const paymentVerify = async (req, res) => {
         console.log("Received Webhook Event:", event);
 
         if (event.event === "payment.captured") {
+            console.log(paymentDetails)
+            console.log(paymentId)
+            console.log(orderId)
             const paymentDetails = event.payload.payment.entity;
             const orderId = paymentDetails.order_id;
             const paymentId = paymentDetails.id;

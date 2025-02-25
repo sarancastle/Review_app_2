@@ -51,7 +51,7 @@ const userCheck =  async (req, res) => {
         } else {
 
             // Assign default referral code if the given referral code is "Google", "Facebook", or "Instagram"
-            const defaultReferralCode = "WZ25FEB17-5531";
+            const defaultReferralCode = "WZ25FEB25-3184";
             const referralSources = ["Google", "Facebook", "Instagram"];
             if (referralSources.includes(data.referralCode)) {
                 data.referralCode = defaultReferralCode;

@@ -49,7 +49,7 @@ const paymentVerify = async (req, res) => {
     try {
         const webhookBody = req.rawBody;
         const webhookSignature = req.headers["x-razorpay-signature"];
-        const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET;
+        const webhookSecret = "J3JKqWCm0aGWbMoktLkyUEts";
 
         if (!webhookBody || !webhookSignature || !webhookSecret) {
             return res.status(400).json({ message: "Invalid webhook request" });

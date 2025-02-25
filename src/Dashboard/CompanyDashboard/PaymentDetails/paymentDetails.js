@@ -55,6 +55,7 @@ const paymentVerify = async (req, res) => {
 
         console.log(webhookBody)
         console.log(webhookSignature)
+        console.log(webhookSecret)
 
         if (!webhookBody || !webhookSignature || !webhookSecret) {
             return res.status(400).json({ message: "Invalid webhook request" });
@@ -65,7 +66,7 @@ const paymentVerify = async (req, res) => {
             .createHmac("sha256", webhookSecret)
             .update(webhookBody)
             .digest("hex");
-console.log(expectedSignature)
+             console.log(expectedSignature)
         if (expectedSignature !== webhookSignature) {
             return res.status(400).json({ message: "Invalid webhook signature" });
         }

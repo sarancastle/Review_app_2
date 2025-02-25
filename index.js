@@ -2,7 +2,7 @@ const express = require("express")
 const app = express()
 const cors = require("cors")
 app.use(cors())
-app.use(express.json())
+app.use(express.json({ verify: (req, res, buf) => (req.rawBody = buf.toString()) }));
 const { checkSubscription, deleteExpiredTickets } = require("./task"); // Import tasks
 const router = require("./src/Dashboard/router")
 // app.set('trust proxy', true); 

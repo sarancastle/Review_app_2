@@ -22,8 +22,8 @@ enum TicketStatus {
   RESOLVED
 }
 
-model TempOrder {
-  tempOrder_id           String @id @default(uuid())  // Temporary Order ID
+model Temporder {
+  temporder_id           String @id @default(uuid())  // Temporary Order ID
   fullName     String
   email        String  @unique
   phone        String

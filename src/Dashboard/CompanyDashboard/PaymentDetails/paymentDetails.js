@@ -1,10 +1,10 @@
 // Prisma Schema
-const { PrismaClient } = require('@prisma/client');
+
 const bcrypt = require("bcryptjs");
 const Razorpay = require("razorpay");
 const crypto = require("crypto");
 
-const prisma = new PrismaClient();
+const prisma = require('../..//prisma')
 const razorpay = new Razorpay({
     key_id: "rzp_test_wCUQcBRBFudBQm",
     key_secret: "J3JKqWCm0aGWbMoktLkyUEts"
@@ -14,14 +14,16 @@ const razorpay = new Razorpay({
 const createOrder = async (req, res) => {
     try {
         const data = req.body;
-        console.log(data.amount)
+        const amount = 19
       
         const order = await razorpay.orders.create({
-            amount: data.amount *100,
+            amount: amount *100,
             currency: "INR",
            
         });
-        const tempOrder = await prisma.temporder.create({
+        console.log(order)
+        console.log(data)
+        const temporder = await prisma.temporder.create({
             data: {
                 fullName: data.fullName,
                 email: data.email,
@@ -34,7 +36,8 @@ const createOrder = async (req, res) => {
                 orderId: order.id
             }
         });
-        res.status(200).json({ success: true, order, tempOrderId: tempOrder.id });
+        console.log(temporder)
+        res.status(200).json({ success: true, order, });
     } catch (error) {
             res.status(500).json({ error: "Internal server error" });
      
@@ -45,7 +48,7 @@ const createOrder = async (req, res) => {
 const paymentVerify = async (req, res) => {
     try {
         const signature = req.headers["x-razorpay-signature"];
-        const expectedSignature = crypto.createHmac("sha256", "YOUR_RAZORPAY_SECRET")
+        const expectedSignature = crypto.createHmac("sha256", "J3JKqWCm0aGWbMoktLkyUEts")
             .update(JSON.stringify(req.body))
             .digest("hex");
         if (signature !== expectedSignature) {
@@ -53,10 +56,10 @@ const paymentVerify = async (req, res) => {
         }
         const payment = req.body.payload.payment.entity;
         if (payment.status === "captured") {
-            const tempOrder = await prisma.temporder.findUnique({ where: { orderId: payment.order_id } });
-            if (!tempOrder) return res.status(404).json({ message: "Temp order not found" });
+            const temporder = await prisma.temporder.findUnique({ where: { orderId: payment.order_id } });
+            if (!temporder) return res.status(404).json({ message: "Temp order not found" });
 
-            let referralCode = tempOrder.referralCode;
+            let referralCode = temporder.referralCode;
             const defaultReferralCode = "WZ25FEB17-5531";
             const referralSources = ["Google", "Facebook", "Instagram"];
 
@@ -74,28 +77,28 @@ const paymentVerify = async (req, res) => {
             subscriptionEndDate.setMinutes(subscriptionEndDate.getMinutes() + 1440);
             const newUser = await prisma.user.create({
                 data: {
-                    name: tempOrder.fullName,
-                    email: tempOrder.email,
-                    phoneNumber: tempOrder.phone,
-                    password: tempOrder.password,
-                    placeId: tempOrder.placeId,
-                    businessName: tempOrder.businessName,
-                    businessType: tempOrder.businessType,
+                    name: temporder.fullName,
+                    email: temporder.email,
+                    phoneNumber: temporder.phone,
+                    password: temporder.password,
+                    placeId: temporder.placeId,
+                    businessName: temporder.businessName,
+                    businessType: temporder.businessType,
                     employee_id: Staff.employee_id,
-                    referralCode: tempOrder.referralCode,
+                    referralCode: temporder.referralCode,
                     isActive: true,
                     subscriptionStartDate: new Date(),
                     subscriptionEndDate
                 }
             });
             await prisma.dashboard.create({ data: { user_id: newUser.user_id } });
-            await prisma.temporder.delete({ where: { id: tempOrder.id } });
+            await prisma.temporder.delete({ where: { id: temporder.id } });
             await prisma.transaction.create({
                 data: {
                     user_id: newUser.user_id,
                     orderId: payment.order_id,
                     paymentId: payment.id,
-                    amount: payment.amount,
+                    amount: payment.amount / 100,
                     status: "paid"
                 }
             });

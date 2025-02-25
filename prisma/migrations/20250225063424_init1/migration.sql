@@ -1,6 +1,26 @@
 -- CreateEnum
 CREATE TYPE "Role" AS ENUM ('ADMIN', 'STAFF');
 
+-- CreateEnum
+CREATE TYPE "TicketStatus" AS ENUM ('OPEN', 'IN_PROGRESS', 'RESOLVED');
+
+-- CreateTable
+CREATE TABLE "Temporder" (
+    "temporder_id" TEXT NOT NULL,
+    "fullName" TEXT NOT NULL,
+    "email" TEXT NOT NULL,
+    "phone" TEXT NOT NULL,
+    "placeId" TEXT NOT NULL,
+    "businessName" TEXT NOT NULL,
+    "businessType" TEXT NOT NULL,
+    "referralCode" TEXT,
+    "password" TEXT NOT NULL,
+    "orderId" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "Temporder_pkey" PRIMARY KEY ("temporder_id")
+);
+
 -- CreateTable
 CREATE TABLE "Employees" (
     "employee_id" TEXT NOT NULL,
@@ -8,9 +28,12 @@ CREATE TABLE "Employees" (
     "employeeEmail" TEXT NOT NULL,
     "employeePhoneNumber" TEXT NOT NULL,
     "employeePassword" TEXT NOT NULL,
+    "otp" TEXT,
+    "otpExpiry" TIMESTAMP(3),
     "referralCode" TEXT NOT NULL,
     "role" "Role" NOT NULL DEFAULT 'STAFF',
     "responsibleEmployeeId" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "Employees_pkey" PRIMARY KEY ("employee_id")
 );
@@ -41,9 +64,14 @@ CREATE TABLE "User" (
 -- CreateTable
 CREATE TABLE "Helpdesk" (
     "helpdesk_id" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "email" TEXT NOT NULL,
     "phoneNumber" TEXT NOT NULL,
     "comment" TEXT NOT NULL,
+    "status" "TicketStatus" NOT NULL DEFAULT 'OPEN',
+    "resolvedAt" TIMESTAMP(3),
     "user_id" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "Helpdesk_pkey" PRIMARY KEY ("helpdesk_id")
 );
@@ -69,6 +97,7 @@ CREATE TABLE "Dashboard" (
 -- CreateTable
 CREATE TABLE "Review" (
     "review_id" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
     "rating" INTEGER NOT NULL,
     "comment" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -78,6 +107,37 @@ CREATE TABLE "Review" (
     CONSTRAINT "Review_pkey" PRIMARY KEY ("review_id")
 );
 
+-- CreateTable
+CREATE TABLE "Transaction" (
+    "transaction_id" TEXT NOT NULL,
+    "user_id" TEXT NOT NULL,
+    "orderId" TEXT NOT NULL,
+    "paymentId" TEXT NOT NULL,
+    "amount" INTEGER NOT NULL,
+    "status" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "Transaction_pkey" PRIMARY KEY ("transaction_id")
+);
+
+-- CreateTable
+CREATE TABLE "Revenue" (
+    "revenue_id" TEXT NOT NULL,
+    "user_id" TEXT NOT NULL,
+    "orderId" TEXT NOT NULL,
+    "amount" INTEGER NOT NULL,
+    "status" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "Revenue_pkey" PRIMARY KEY ("revenue_id")
+);
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Temporder_email_key" ON "Temporder"("email");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Temporder_orderId_key" ON "Temporder"("orderId");
+
 -- CreateIndex
 CREATE UNIQUE INDEX "Employees_employee_id_key" ON "Employees"("employee_id");
 
@@ -86,9 +146,6 @@ CREATE UNIQUE INDEX "Employees_employeeEmail_key" ON "Employees"("employeeEmail"
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Employees_referralCode_key" ON "Employees"("referralCode");
-
--- CreateIndex
-CREATE UNIQUE INDEX "Employees_responsibleEmployeeId_key" ON "Employees"("responsibleEmployeeId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "User_user_id_key" ON "User"("user_id");
@@ -108,14 +165,23 @@ CREATE UNIQUE INDEX "Dashboard_user_id_key" ON "Dashboard"("user_id");
 -- CreateIndex
 CREATE UNIQUE INDEX "Review_review_id_key" ON "Review"("review_id");
 
--- AddForeignKey
-ALTER TABLE "User" ADD CONSTRAINT "User_employee_id_fkey" FOREIGN KEY ("employee_id") REFERENCES "Employees"("employee_id") ON DELETE RESTRICT ON UPDATE CASCADE;
+-- CreateIndex
+CREATE UNIQUE INDEX "Transaction_paymentId_key" ON "Transaction"("paymentId");
 
 -- AddForeignKey
-ALTER TABLE "Helpdesk" ADD CONSTRAINT "Helpdesk_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "User"("user_id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "User" ADD CONSTRAINT "User_employee_id_fkey" FOREIGN KEY ("employee_id") REFERENCES "Employees"("employee_id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Dashboard" ADD CONSTRAINT "Dashboard_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "User"("user_id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "Helpdesk" ADD CONSTRAINT "Helpdesk_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "User"("user_id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Review" ADD CONSTRAINT "Review_dashboard_id_fkey" FOREIGN KEY ("dashboard_id") REFERENCES "Dashboard"("dashboard_id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "Dashboard" ADD CONSTRAINT "Dashboard_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "User"("user_id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Review" ADD CONSTRAINT "Review_dashboard_id_fkey" FOREIGN KEY ("dashboard_id") REFERENCES "Dashboard"("dashboard_id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Transaction" ADD CONSTRAINT "Transaction_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "User"("user_id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Revenue" ADD CONSTRAINT "Revenue_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "User"("user_id") ON DELETE RESTRICT ON UPDATE CASCADE;

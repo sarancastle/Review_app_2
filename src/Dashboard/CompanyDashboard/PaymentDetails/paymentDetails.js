@@ -179,6 +179,29 @@ const paymentVerify = async (req, res) => {
         // Parse Webhook Event
         const event = JSON.parse(webhookBody);
 
+         // Extract Referral Code from Temp Order
+         let referralCode = tempOrder.referralCode;
+         const defaultReferralCode = "WZ25FEB17-5531";
+         const referralSources = ["Google", "Facebook", "Instagram"];
+ 
+         if (referralSources.includes(referralCode)) {
+             referralCode = defaultReferralCode;
+         }
+ 
+         console.log('🔹 Referral Code:', referralCode);
+ 
+         // Find Staff using Referral Code
+         const Staff = await prisma.employees.findUnique({
+             where: { referralCode },
+         });
+ 
+         if (!Staff) {
+             console.log('❌ Invalid Referral Code!');
+             return res.status(404).json({ message: "Invalid Referral Code" });
+         }
+ 
+         console.log('🔹 Found Staff:', Staff);
+
         switch (event.event) {
             case 'payment.captured': {
                 const paymentDetails = event.payload.payment.entity;
@@ -210,6 +233,7 @@ const paymentVerify = async (req, res) => {
                         businessName: tempOrder.businessName,
                         businessType: tempOrder.businessType,
                         referralCode: tempOrder.referralCode,
+                        employee_id: Staff.employee_id,
                         isActive: true,
                         subscriptionStartDate: new Date(),
                         subscriptionEndDate: new Date(Date.now() + 24 * 60 * 60 * 1000),

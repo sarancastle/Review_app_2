@@ -179,17 +179,26 @@ const paymentVerify = async (req, res) => {
         // Parse Webhook Event
         const event = JSON.parse(webhookBody);
 
-         // Fetch Temp Order
-         const tempOrder = await prisma.temporder.findUnique({ where: { orderId } });
-         console.log('🔹 Fetched Temp Order:', tempOrder);
+         
 
-         if (!tempOrder) {
-             console.log('❌ Temp Order Not Found!');
-             return res.status(404).json({ message: 'Temporary order not found' });
-         }
+        switch (event.event) {
+            case 'payment.captured': {
+                const paymentDetails = event.payload.payment.entity;
+                const orderId = paymentDetails.order_id;
+                const paymentId = paymentDetails.id;
+                const amount = paymentDetails.amount / 100;
+
+                console.log('🔹 Payment ID:', paymentId);
+                console.log('🔹 Order ID:', orderId);
+                console.log('🔹 Amount:', amount);
 
 
-         // Extract Referral Code from Temp Order
+
+                // Fetch Temp Order
+                const tempOrder = await prisma.temporder.findUnique({ where: { orderId } });
+                console.log('🔹 Fetched Temp Order:', tempOrder);
+
+                // Extract Referral Code from Temp Order
          let referralCode = tempOrder.referralCode;
          const defaultReferralCode = "WZ25FEB25-3184";
          const referralSources = ["Google", "Facebook", "Instagram"];
@@ -213,18 +222,11 @@ const paymentVerify = async (req, res) => {
          console.log('🔹 Found Staff:', Staff);
          console.log("employeed_id",Staff.employee_id)
 
-        switch (event.event) {
-            case 'payment.captured': {
-                const paymentDetails = event.payload.payment.entity;
-                const orderId = paymentDetails.order_id;
-                const paymentId = paymentDetails.id;
-                const amount = paymentDetails.amount / 100;
+                if (!tempOrder) {
+                    console.log('❌ Temp Order Not Found!');
+                    return res.status(404).json({ message: 'Temporary order not found' });
+                }
 
-                console.log('🔹 Payment ID:', paymentId);
-                console.log('🔹 Order ID:', orderId);
-                console.log('🔹 Amount:', amount);
-
-               
                 // Register New User
                 const newUser = await prisma.user.create({
                     data: {

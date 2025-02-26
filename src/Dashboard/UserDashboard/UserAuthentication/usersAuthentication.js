@@ -129,10 +129,10 @@ const userLogin =  async (req, res) => {
         if (isPasswordValid) {
 
             var accessToken = jwt.sign({ user_id: isExistingUser.user_id }, 'ikeyqr', {
-                expiresIn: "60s"
+                expiresIn: "30m"
             });
             var refreshToken = jwt.sign({ user_id: isExistingUser.user_id }, 'ikeyqr', {
-                expiresIn: "60s"
+                expiresIn: "7d"
             });
 
             await prisma.token.create({

@@ -23,7 +23,7 @@ const refresh= async (req, res) => {
             jwt.verify(tokenValid.refreshToken, 'ikeyqr', function (err) {
                 if (!err) {
                     var accessToken = jwt.sign({ user_id: tokenValid.user_id }, 'ikeyqr', {
-                        expiresIn: "30s"
+                        expiresIn: "30m"
                     });
                     res.json({
                         accessToken: accessToken

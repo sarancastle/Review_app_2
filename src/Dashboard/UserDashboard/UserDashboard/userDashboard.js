@@ -4,6 +4,7 @@ const prisma = require("../../prisma")
 const getUserDashboardById = async (req, res) => {
     // Extracting `id` from request parameters
     const { id } = req.params;
+    console.log(id)
     // console.log("Received request for dashboard. User ID:", id); // Debug log
 
     try {
@@ -25,7 +26,7 @@ const getUserDashboardById = async (req, res) => {
             },
         });
 
-        // console.log("Fetched userDetails:", userDetails); // Debug log
+        console.log("Fetched userDetails:", userDetails); // Debug log
 
          // Check if user details exist
          if (!userDetails) {

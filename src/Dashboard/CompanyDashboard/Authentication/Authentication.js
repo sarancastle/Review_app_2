@@ -1,6 +1,7 @@
 const prisma = require("../../prisma")
 const nodemailer = require('nodemailer');
 var jwt = require('jsonwebtoken');
+const bcrypt = require("bcryptjs");
 const moment = require('moment'); // Install moment.js for date formatting
 const transporter = nodemailer.createTransport({
     service: "gmail",
@@ -9,6 +10,37 @@ const transporter = nodemailer.createTransport({
         pass: 'jhmszkilzaiyhmyd',
     }
 });
+
+
+const refresh= async (req, res) => {
+        const data = req.body;
+        const tokenValid = await prisma.token.findFirst({
+            where: {
+                refreshToken: data.refreshToken
+            }
+        })
+        if (tokenValid) {
+            jwt.verify(tokenValid.refreshToken, 'ikeyqr', function (err) {
+                if (!err) {
+                    var accessToken = jwt.sign({ user_id: tokenValid.user_id }, 'ikeyqr', {
+                        expiresIn: "30s"
+                    });
+                    res.json({
+                        accessToken: accessToken
+                    })
+                } else {
+                    res.json({
+                        message: "User Not Authenticated"
+                    })
+                }
+            });
+        } else {
+            res.json({
+                message: "No Token Found"
+            })
+        }
+    }
+
 
 // employees forgot password
 const employeesForgotPassword = async (req, res) => {
@@ -220,11 +252,12 @@ const employeesRegister = async (req, res) => {
 // login for employees ADMIN/STAFF
 const employeesLogin = async (req, res) => {
     try {
-        const { employeeEmail, employeePassword } = req.body;
+        const data= req.body;
+        console.log(data)
 
         // Check if user exists
         const isExistingUser = await prisma.employees.findUnique({
-            where: { employeeEmail }
+            where: { employeeEmail:data.email }
         });
 
         if (!isExistingUser) {
@@ -232,11 +265,9 @@ const employeesLogin = async (req, res) => {
         }
 
         // Compare hashed password
-        const isPasswordValid = await bcrypt.compare(employeePassword, isExistingUser.employeePassword);
-        if (!isPasswordValid) {
+        if (data.password !== isExistingUser.employeePassword) {
             return res.status(400).json({ message: "Invalid username or password" });
         }
-
         // Generate access and refresh tokens
         const accessToken = jwt.sign(
             { employee_id: isExistingUser.employee_id, role: isExistingUser.role },
@@ -310,4 +341,4 @@ const changePassword = async (req, res) => {
 };
 
 
-module.exports = { employeesForgotPassword, employeesCheckOtp, employeesOtpVerify, employeesRegister, employeesLogin, changePassword }
+module.exports = {refresh, employeesForgotPassword, employeesCheckOtp, employeesOtpVerify, employeesRegister, employeesLogin, changePassword }

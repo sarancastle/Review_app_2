@@ -177,33 +177,7 @@ setInterval(checkSubscription, 60 * 1000); // Runs every minute (for testing)
 //     }
 // });
 
-// // app.post('/auth/refresh', async (req, res) => {
-// //     const data = req.body;
-// //     const tokenValid = await prisma.token.findFirst({
-// //         where: {
-// //             refreshToken: data.refreshToken
-// //         }
-// //     })
-// //     if (tokenValid) {
-// //         jwt.verify(tokenValid.refreshToken, 'ikeyqr', function (err) {
-// //             if (!err) {
-// //                 var accessToken = jwt.sign({ user_id: tokenValid.user_id }, 'ikeyqr', {
-// //                     expiresIn: "30s"
-// //                 });
-// //                 res.json({
-// //                     accessToken: accessToken
-// //                 })
-// //             } else {
-// //                 res.json({
-// //                     message: "User Not Authenticated"
-// //                 })
-// //             }
-// //         });
-// //     } else {
-// //         res.json({
-// //             message: "No Token Found"
-// //         })
-// //     }
+// //
 
 // // })
 // app.post('/employees/refresh', async (req, res) => {

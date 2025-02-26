@@ -107,6 +107,7 @@ const userCheck =  async (req, res) => {
 const userLogin =  async (req, res) => {
     try {
         const data = req.body;
+       
 
         // Validate the required fields
         if (!data.email || !data.password) {

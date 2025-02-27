@@ -233,7 +233,7 @@ const paymentVerify = async (req, res) => {
 
                 // Extract Referral Code from Temp Order
          let referralCode = tempOrder.referralCode;
-         const defaultReferralCode = "WZ25FEB25-3184";
+         const defaultReferralCode = "WZ25FEB27-2879";
          const referralSources = ["Google", "Facebook", "Instagram"];
  
          if (referralSources.includes(referralCode)) {

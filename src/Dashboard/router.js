@@ -5,7 +5,7 @@ const { employeesForgotPassword, employeesCheckOtp, employeesOtpVerify, employee
 const { getUserDashboardById, deleteReview, postUsersHelpCenter, subscriptionCheckById, qrReviewById, getUserHelpdeskByUserId } = require("./UserDashboard/UserDashboard/userDashboard")
 const { getAllAdmin, getParticularAdminById, getAllStaff, getAllTickets, getParticularTickets, updateParticularTicketStatus } = require("./CompanyDashboard/AdminDashboard/adminDashboard")
 const { staffDetailsById, getParticularStaffReferrals } = require("./CompanyDashboard/StaffDashboard/staffDashboard")
-const { createOrder, paymentVerify, renewSubscription, verifyRenewalPayment } = require("./CompanyDashboard/PaymentDetails/paymentDetails")
+const { createOrder, paymentVerify, renewSubscription, verifyRenewalPayment, getAllTransactions, getTransactionsByEmployee } = require("./CompanyDashboard/PaymentDetails/paymentDetails")
 const protectedtRoute = require('../../protectedRoute')
 const roleBasedAccess = require("../../roleBasedAccess")
 
@@ -50,6 +50,8 @@ router.post("/create-order",createOrder)
 router.post("/razorpay-webhook",paymentVerify)//WEBHOOK
 router.post("/renew-subscription", renewSubscription); 
 router.post("/verify-renewal-payment", verifyRenewalPayment)//WEBHOOK
+router.get("/transactions",getAllTransactions)
+router.get("/transactions/:employeeId",getTransactionsByEmployee)
 
 
 

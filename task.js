@@ -50,5 +50,5 @@ const checkSubscription = async () => {
 // Export functions
 module.exports = {
     checkSubscription,
-    
+    // deleteExpiredTickets
 };

@@ -10,6 +10,39 @@ const razorpay = new Razorpay({
     key_secret: "J3JKqWCm0aGWbMoktLkyUEts"
 });
 
+const getAllTransactions = async (req, res) => {
+    try {
+        const transactions = await prisma.transaction.findMany();
+
+        if (transactions.length === 0) {
+            return res.status(404).json({ message: 'No transactions found' });
+        }
+
+        res.status(200).json(transactions);
+    } catch (error) {
+        res.status(500).json({ error: 'Internal server error' });
+    }
+};
+
+// 🔹 Get transactions by employee ID
+const getTransactionsByEmployee = async (req, res) => {
+    const { employeeId } = req.params;
+
+    try {
+        const transactions = await prisma.transaction.findMany({
+            where: { employee_id: employeeId }
+        });
+
+        if (transactions.length === 0) {
+            return res.status(404).json({ message: 'No transactions found for this employee' });
+        }
+
+        res.status(200).json(transactions);
+    } catch (error) {
+        res.status(500).json({ error: 'Internal server error' });
+    }
+};
+
 // 1. Create Temporary Order
 const createOrder = async (req, res) => {
     try {
@@ -254,6 +287,8 @@ const paymentVerify = async (req, res) => {
                 await prisma.transaction.create({
                     data: {
                         user_id: newUser.user_id,
+                        userName:newUser.name,
+                        employee_id:newUser.employee_id,
                         orderId,
                         paymentId,
                         amount,
@@ -387,4 +422,4 @@ const verifyRenewalPayment = async (req, res) => {
     }
 };
 
-module.exports = { createOrder, paymentVerify, renewSubscription, verifyRenewalPayment };
+module.exports = {getAllTransactions ,getTransactionsByEmployee, createOrder, paymentVerify, renewSubscription, verifyRenewalPayment };

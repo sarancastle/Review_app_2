@@ -118,11 +118,12 @@ model Transaction {
   transaction_id String @id @default(uuid())
   user_id        String
   orderId        String
+  userName       String
   paymentId      String @unique
   amount         Int
   status         String  // "Success", "Failed", "Refunded"
   createdAt      DateTime @default(now())
-
+  employee_id    String
   user           User @relation(fields: [user_id], references: [user_id])
 }
 

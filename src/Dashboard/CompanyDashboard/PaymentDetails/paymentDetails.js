@@ -299,7 +299,7 @@ const paymentVerify = async (req, res) => {
                     },
                 });
 
-                console.log('✅ Transaction Recorded',jarom);
+                console.log('✅ Transaction-Recorded',jarom);
 
                 // Delete Temp Order
                 await prisma.temporder.delete({ where: { orderId } });

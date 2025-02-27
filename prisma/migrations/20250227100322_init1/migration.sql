@@ -112,10 +112,12 @@ CREATE TABLE "Transaction" (
     "transaction_id" TEXT NOT NULL,
     "user_id" TEXT NOT NULL,
     "orderId" TEXT NOT NULL,
+    "userName" TEXT NOT NULL,
     "paymentId" TEXT NOT NULL,
     "amount" INTEGER NOT NULL,
     "status" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "employee_id" TEXT NOT NULL,
 
     CONSTRAINT "Transaction_pkey" PRIMARY KEY ("transaction_id")
 );

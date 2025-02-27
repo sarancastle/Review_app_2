@@ -283,8 +283,11 @@ const paymentVerify = async (req, res) => {
                 const dashboard = await prisma.dashboard.create({
                     data: { user_id: newUser.user_id },
                 });
+
+                console.log('✅ New User Created:', dashboard);
+
                 // Create Transaction Record
-                await prisma.transaction.create({
+                const jarom =await prisma.transaction.create({
                     data: {
                         user_id: newUser.user_id,
                         userName:newUser.name,
@@ -296,7 +299,7 @@ const paymentVerify = async (req, res) => {
                     },
                 });
 
-                console.log('✅ Transaction Recorded');
+                console.log('✅ Transaction Recorded',jarom);
 
                 // Delete Temp Order
                 await prisma.temporder.delete({ where: { orderId } });

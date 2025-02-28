@@ -33,11 +33,13 @@ const checkSubscription = async () => {
 //         const twoMinutesAgo = new Date();
 //         twoMinutesAgo.setMinutes(twoMinutesAgo.getMinutes() - 2);
 
+//         console.log(twoMinutesAgo)
+
 //         // Ensure resolvedAt exists in the schema before running delete
 //         const result = await prisma.helpdesk.deleteMany({
 //             where: {
 //                 status: "RESOLVED",
-//                 resolvedAt: { not: null, lte: twoMinutesAgo }, // Ensure resolvedAt is not null
+//                 resolvedAt: { lte: twoMinutesAgo }, // Ensure resolvedAt is not null
 //             },
 //         });
 
@@ -50,5 +52,5 @@ const checkSubscription = async () => {
 // Export functions
 module.exports = {
     checkSubscription,
-    // deleteExpiredTickets
+    //  deleteExpiredTickets
 };

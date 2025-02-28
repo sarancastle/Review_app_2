@@ -76,6 +76,118 @@ const Redis = require('ioredis')
 //     }
 // }
 
+const userCount = async (req, res) => {
+    try {
+        // Count all users
+        const totalUsers = await prisma.user.count();
+
+        // Count active users (isActive = true)
+        const activeUsers = await prisma.user.count({
+            where: { isActive: true },
+        });
+        console.log(activeUsers)
+        console.log(totalUsers)
+        // Respond with the counts
+        res.status(200).json({
+            totalUsers,
+            activeUsers,
+        });
+    } catch (error) {
+        console.error("Error fetching user counts:", error);
+        res.status(500).json({ error: "Internal Server Error" });
+    }
+}
+
+const statement = async (req, res) => {
+    try {
+        // Get total and active users from the database
+        const totalUsers = await prisma.user.count();
+        const activeUsers = await prisma.user.count({ where: { isActive: true } });
+
+        
+
+        // Base cost per user
+        const baseCostPerUser = 749;
+
+        // Expected Settlement Amount
+        const expectedSettlementAmount = {
+            perUser: {
+                perUserRevenue: `Rs: ${540}`,
+                referralBonusPerUser: `Rs: ${209}`,
+                additionalChargesPerUser: `Rs: ${19}`,
+            },
+            revenue: {
+                totalRevenue: `Rs: ${activeUsers * 540}`,
+                totalReferralBonus: `Rs: ${activeUsers * 209}`,
+                totalAdditionalCharges: `Rs: ${activeUsers * 19}`,
+            },
+        };
+
+        // Settlement Amount (Expected)
+        const actualSettlementAmount = {
+            perUser: {
+                perUserRevenue: `Rs: ${521}`,
+                referralBonusPerUser: `Rs: ${209}`,
+                additionalChargesPerUser: `Rs: ${19}`,
+            },
+            revenue: {
+                totalRevenue: `Rs: ${activeUsers * 521}`,
+                totalReferralBonus: `Rs: ${activeUsers * 209}`,
+                totalAdditionalCharges: `Rs: ${activeUsers * 19}`,
+            },
+        };
+
+
+        // Calculate values
+        const totalRevenue = activeUsers * 521; // Total revenue calculation
+        const appExpenditure = 6000; // Fixed app expenditure
+        const totalRevenueAfterExpense = totalRevenue - appExpenditure; // Revenue after expenses
+        const sharePerOwner = Math.round(totalRevenueAfterExpense / 3); // Equal share per owner (rounded)
+
+        // Share Calculation
+        const Share = {
+            totalRevenue: {
+                totalRevenue: `Rs: ${totalRevenue}`,
+                appExpenditure: `Rs: ${appExpenditure}`,
+                totalRevenueAfterExpenditure: `Rs: ${totalRevenueAfterExpense}`,
+            },
+            Antony:`Rs: ${sharePerOwner}`,
+            Jarom: `Rs: ${sharePerOwner}`,
+            Josen: `Rs: ${sharePerOwner}`
+            // Displaying app expenditure separately
+        };
+
+        // Generate Summary Statement
+        //   const settlementStatement = `
+        // **Actual Settlement (Final Calculation)**
+        // Each active user was expected to generate ₹${settlementAmount.perUser.perUserRevenue} in revenue.
+        // The total expected revenue for ${activeUsers} active users was ₹${settlementAmount.revenue.totalRevenue}.
+        // A referral bonus of ₹${settlementAmount.perUser.referralBonusPerUser} per user was planned, totaling ₹${settlementAmount.revenue.totalReferralBonus}.
+        // Additional charges were expected at ₹${settlementAmount.perUser.additionalChargesPerUser} per user, adding up to ₹${settlementAmount.revenue.totalAdditionalCharges}.
+
+        // **Expected Settlement (Planned)**
+        // The actual per-user revenue turned out to be ₹${actualSettlement.perUser.perUserRevenue}, resulting in a total revenue of ₹${actualSettlement.revenue.totalRevenue}.
+        // The final referral bonus paid was ₹${actualSettlement.perUser.referralBonusPerUser} per user, totaling ₹${actualSettlement.revenue.totalReferralBonus}.
+        // Additional charges collected were ₹${actualSettlement.perUser.additionalChargesPerUser} per user, bringing in ₹${actualSettlement.revenue.totalAdditionalCharges}.
+        //   `;
+
+        // Sending the response
+        res.status(200).json({
+            totalUsers,
+            activeUsers,
+            baseCostPerUser,
+            expectedSettlementAmount,
+            actualSettlementAmount,
+            Share
+
+            // settlementStatement, // Added human-readable report
+        });
+    } catch (error) {
+        console.error("Error fetching user settlement data:", error);
+        res.status(500).json({ error: "Internal Server Error" });
+    }
+};
+
 const getAllAdmin = async (req, res) => {
     try {
         const allAdmins = await prisma.employees.findMany({
@@ -105,7 +217,7 @@ const getAllAdmin = async (req, res) => {
 
 
 // get the particular admin details 
-const getParticularAdminById =  async (req, res) => {
+const getParticularAdminById = async (req, res) => {
     try {
         const { id } = req.params; // Get admin ID from URL parameters
 
@@ -227,7 +339,7 @@ const getAllTickets = async (req, res) => {
     } catch (error) {
         res.status(500).json({ error: "Internal server error" });
     }
-} 
+}
 
 // this api is use to get the particular ticket details
 const getParticularTickets = async (req, res) => {
@@ -245,7 +357,7 @@ const getParticularTickets = async (req, res) => {
 }
 
 // this api is use to get the particular ticket details and update the status
-const updateParticularTicketStatus =async (req, res) => {
+const updateParticularTicketStatus = async (req, res) => {
     const { id } = req.params;
     const { status } = req.body;
 
@@ -314,4 +426,4 @@ const updateParticularTicketStatus =async (req, res) => {
 
 
 
-module.exports ={getAllAdmin,getParticularAdminById,getAllStaff,getAllTickets,getParticularTickets,updateParticularTicketStatus}
+module.exports = { statement, userCount, getAllAdmin, getParticularAdminById, getAllStaff, getAllTickets, getParticularTickets, updateParticularTicketStatus }

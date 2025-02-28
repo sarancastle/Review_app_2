@@ -43,6 +43,28 @@ const getTransactionsByEmployee = async (req, res) => {
     }
 };
 
+// 🔹 Get transactions by user ID
+const getTransactionsByUser = async (req, res) => {
+    const data= req.params; // Extract userId from request parameters
+    console.log(data)
+    try {
+        const transactions = await prisma.transaction.findMany({
+            where: { user_id: data.userId } // Assuming the column name is user_id
+        });
+        console.log(transactions)
+
+        if (transactions.length === 0) {
+            return res.status(404).json({ message: 'No transactions found for this user' });
+        }
+
+        res.status(200).json(transactions);
+    } catch (error) {
+        res.status(500).json({ error: 'Internal server error' });
+    }
+};
+
+
+
 // 1. Create Temporary Order
 const createOrder = async (req, res) => {
     try {
@@ -425,4 +447,4 @@ const verifyRenewalPayment = async (req, res) => {
     }
 };
 
-module.exports = {getAllTransactions ,getTransactionsByEmployee, createOrder, paymentVerify, renewSubscription, verifyRenewalPayment };
+module.exports = {getTransactionsByUser ,getAllTransactions ,getTransactionsByEmployee, createOrder, paymentVerify, renewSubscription, verifyRenewalPayment };

@@ -7,14 +7,14 @@ app.use(express.json({
         req.rawBody = buf.toString(); // Store raw body as a string
     }
   }));
-const { checkSubscription, deleteExpiredTickets } = require("./task"); // Import tasks
+const { checkSubscription } = require("./task"); // Import tasks
 const router = require("./src/Dashboard/router")
 // app.set('trust proxy', true); 
 app.use("/v1",router)
 
 // Schedule tasks
 setInterval(checkSubscription, 60 * 1000); // Runs every minute (for testing)
-// setInterval(deleteExpiredTickets, 60 * 1000); // Runs every minute (for testing)
+//setInterval(deleteExpiredTickets, 60 * 1000); // Runs every minute (for testing)
 
 
 
@@ -1264,6 +1264,7 @@ setInterval(checkSubscription, 60 * 1000); // Runs every minute (for testing)
 // // Call the function periodically (every 24 hours)
 // setInterval(deleteExpiredTickets, 60000)
 // //86400000); // 86400000ms = 24 hours
+
 
 
 app.listen(9004, () => {

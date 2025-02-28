@@ -36,72 +36,72 @@ const userCheck =  async (req, res) => {
 }
 
 // new user register
- const userRegister = async (req, res) => {
-    try {
-        const data = req.body;
-        // console.log(data)
-        const isExistingUser = await prisma.user.findUnique({
-            where: {
-                email: data.email
-            }
-        });
+//  const userRegister = async (req, res) => {
+//     try {
+//         const data = req.body;
+//         // console.log(data)
+//         const isExistingUser = await prisma.user.findUnique({
+//             where: {
+//                 email: data.email
+//             }
+//         });
 
-        if (isExistingUser) {
-            return res.status(404).json({ message: "User Already Existed" });
-        } else {
+//         if (isExistingUser) {
+//             return res.status(404).json({ message: "User Already Existed" });
+//         } else {
 
-            // Assign default referral code if the given referral code is "Google", "Facebook", or "Instagram"
-            const defaultReferralCode = "WZ25FEB25-3184";
-            const referralSources = ["Google", "Facebook", "Instagram"];
-            if (referralSources.includes(data.referralCode)) {
-                data.referralCode = defaultReferralCode;
-            }
+//             // Assign default referral code if the given referral code is "Google", "Facebook", or "Instagram"
+//             const defaultReferralCode = "WZ25FEB25-3184";
+//             const referralSources = ["Google", "Facebook", "Instagram"];
+//             if (referralSources.includes(data.referralCode)) {
+//                 data.referralCode = defaultReferralCode;
+//             }
 
-            // console.log("Final Referral Code:", data.referralCode);
+//             // console.log("Final Referral Code:", data.referralCode);
 
-            const Staff = await prisma.employees.findUnique({
-                where: { referralCode: data.referralCode }
-            });
+//             const Staff = await prisma.employees.findUnique({
+//                 where: { referralCode: data.referralCode }
+//             });
 
-            if (!Staff) {
-                return res.status(404).json({ message: "Invalid Referral Code" });
-            }
+//             if (!Staff) {
+//                 return res.status(404).json({ message: "Invalid Referral Code" });
+//             }
 
-            const hashedPassword = await bcrypt.hash(data.password, 10);
+//             const hashedPassword = await bcrypt.hash(data.password, 10);
 
-            // Set subscription expiration to 2 minutes from now
-            const subscriptionEndDate = new Date();
-            subscriptionEndDate.setMinutes(subscriptionEndDate.getMinutes() + 1440);
-            const createNewUser = await prisma.user.create({
-                data: {
-                    name: data.fullName,
-                    email: data.email,
-                    phoneNumber: data.phone,
-                    password: hashedPassword,
-                    placeId: data.placeId,
-                    businessName: data.businessName,
-                    businessType: data.businessType,
-                    employee_id: Staff.employee_id,
-                    referralCode: data.referralCode,
-                    isActive: true,
-                    subscriptionStartDate: new Date(),
-                    subscriptionEndDate: subscriptionEndDate
-                }
-            });
-            const dashboard = await prisma.dashboard.create({
-                data: { user_id: createNewUser.user_id },
-            });
-            res.status(200).json({
-                message: `${createNewUser.name} has been Registered Successfully`,
-                dashboard_url: `/dashboard/${createNewUser.user_id}`,
-                reviewForm_url: `/review/${createNewUser.user_id}`,
-                user_id: createNewUser.user_id
-            });
-        }
-    } catch (error) {
-        res.status(500).json({ error: "Internal server error" });
-    }
-}
+//             // Set subscription expiration to 2 minutes from now
+//             const subscriptionEndDate = new Date();
+//             subscriptionEndDate.setMinutes(subscriptionEndDate.getMinutes() + 1440);
+//             const createNewUser = await prisma.user.create({
+//                 data: {
+//                     name: data.fullName,
+//                     email: data.email,
+//                     phoneNumber: data.phone,
+//                     password: hashedPassword,
+//                     placeId: data.placeId,
+//                     businessName: data.businessName,
+//                     businessType: data.businessType,
+//                     employee_id: Staff.employee_id,
+//                     referralCode: data.referralCode,
+//                     isActive: true,
+//                     subscriptionStartDate: new Date(),
+//                     subscriptionEndDate: subscriptionEndDate
+//                 }
+//             });
+//             const dashboard = await prisma.dashboard.create({
+//                 data: { user_id: createNewUser.user_id },
+//             });
+//             res.status(200).json({
+//                 message: `${createNewUser.name} has been Registered Successfully`,
+//                 dashboard_url: `/dashboard/${createNewUser.user_id}`,
+//                 reviewForm_url: `/review/${createNewUser.user_id}`,
+//                 user_id: createNewUser.user_id
+//             });
+//         }
+//     } catch (error) {
+//         res.status(500).json({ error: "Internal server error" });
+//     }
+// }
 
 // user login
 const userLogin =  async (req, res) => {
@@ -267,4 +267,4 @@ const userForgotPassword = async (req, res) => {
  }
 
 
-module.exports = {userCheck,userRegister,userLogin,userForgotPassword,userOtpVerify}
+module.exports = {userCheck,userLogin,userForgotPassword,userOtpVerify}

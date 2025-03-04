@@ -45,7 +45,7 @@ const getTransactionsByEmployee = async (req, res) => {
 
 // 🔹 Get transactions by user ID
 const getTransactionsByUser = async (req, res) => {
-    const data= req.params; // Extract userId from request parameters
+    const data = req.params; // Extract userId from request parameters
     console.log(data)
     try {
         const transactions = await prisma.transaction.findMany({
@@ -69,12 +69,12 @@ const getTransactionsByUser = async (req, res) => {
 const createOrder = async (req, res) => {
     try {
         const data = req.body;
-        const amount =749
-      
+        const amount = 749
+
         const order = await razorpay.orders.create({
-            amount: amount *100,
+            amount: amount * 100,
             currency: "INR",
-           
+
         });
         console.log(order)
         console.log(data)
@@ -94,8 +94,8 @@ const createOrder = async (req, res) => {
         console.log(temporder)
         res.status(200).json({ success: true, order, });
     } catch (error) {
-            res.status(500).json({ error: "Internal server error" });
-     
+        res.status(500).json({ error: "Internal server error" });
+
     }
 };
 
@@ -136,7 +136,7 @@ const createOrder = async (req, res) => {
 //         // Parse Webhook Event
 //         const event = JSON.parse(webhookBody);
 
-         
+
 
 //         switch (event.event) {
 //             case 'payment.captured': {
@@ -159,23 +159,23 @@ const createOrder = async (req, res) => {
 //          let referralCode = tempOrder.referralCode;
 //          const defaultReferralCode = "WZ25FEB27-1054";
 //          const referralSources = ["Google", "Facebook", "Instagram"];
- 
+
 //          if (referralSources.includes(referralCode)) {
 //              referralCode = defaultReferralCode;
 //          }
- 
+
 //          console.log('🔹 Referral Code:', referralCode);
- 
+
 //          // Find Staff using Referral Code
 //          const Staff = await prisma.employees.findUnique({
 //              where: { referralCode },
 //          });
- 
+
 //          if (!Staff) {
 //              console.log('❌ Invalid Referral Code!');
 //              return res.status(404).json({ message: "Invalid Referral Code" });
 //          }
- 
+
 //          console.log('🔹 Found Staff:', Staff);
 //          console.log("employeed_id",Staff.employee_id)
 
@@ -289,7 +289,7 @@ const paymentVerify = async (req, res) => {
         // Parse Webhook Event
         const event = JSON.parse(webhookBody);
 
-     
+
         switch (event.event) {
             case "payment.captured": {
                 const paymentDetails = event.payload.payment.entity;
@@ -338,39 +338,39 @@ const paymentVerify = async (req, res) => {
                 }
 
                 const tempOrder = await prisma.temporder.findUnique({ where: { orderId } });
-                
+
                 if (!tempOrder) {
                     console.log("❌ Temp Order Not Found!");
                     return res.status(404).json({ message: "Temporary order not found" });
                 }
-                
+
                 // Extract Referral Code
                 let referralCode = tempOrder.referralCode;
                 const defaultReferralCode = "WZ25MAR04-6427";
                 const referralSources = ["Google", "Facebook", "Instagram"];
-                
+
                 if (referralSources.includes(referralCode)) {
                     referralCode = defaultReferralCode;
                 }
-                
+
                 console.log('🔹 Referral Code:', referralCode);
-                
+
                 // Find Staff using Referral Code
                 const staff = await prisma.employees.findUnique({ where: { referralCode } });
-                console.log("employee_id",staff.employee_id)
-                
+                console.log("employee_id", staff.employee_id)
+
                 if (!staff) {
                     console.log('❌ Invalid Referral Code!');
                     return res.status(404).json({ message: "Invalid Referral Code" });
                 }
-                
+
                 console.log('🔹 Found Staff:', staff);
                 console.log("employee_id", staff.employee_id);
-                
+
                 // Hash Password (Ensure you installed bcrypt: npm install bcrypt)
                 // const bcrypt = require('bcrypt');
                 const hashedPassword = await bcrypt.hash(tempOrder.password, 10);
-                
+
                 // Create New User
                 const newUser = await prisma.user.create({
                     data: {
@@ -388,28 +388,57 @@ const paymentVerify = async (req, res) => {
                         subscriptionEndDate: new Date(Date.now() + 2 * 60 * 1000), // 2 minutes from now
                     }
                 });
-                
+
                 console.log("✅ New User Created:", newUser);
-                
+
+                const dashboard = await prisma.dashboard.create({
+                    data: { user_id: newUser.user_id },
+                });
+
+                console.log('✅ New User Created:', dashboard);
+
+                // Create Transaction Record
+                const jarom = await prisma.transaction.create({
+                    data: {
+                        user_id: newUser.user_id,
+                        userName: newUser.name,
+                        orderId,
+                        paymentId,
+                        amount,
+                        status: "paid",
+                        type: "Signup",
+                    },
+                });
+
+                console.log('✅ Transaction-Recorded', jarom);
+
+
+
                 // Transaction Handling
-                await prisma.$transaction([
-                    prisma.dashboard.create({ data: { user_id: newUser.user_id } }),
-                    prisma.transaction.create({
-                        data: {
-                            user_id: newUser.user_id,
-                            userName: newUser.name,
-                            orderId,
-                            paymentId,
-                            amount,
-                            status: "paid",
-                            type: "Signup",
-                        },
-                    }),
-                    prisma.temporder.delete({ where: { orderId } }),
-                ]);
-                
+                // await prisma.$transaction([
+                //     prisma.dashboard.create({ data: { user_id: newUser.user_id } }),
+                //     prisma.transaction.create({
+                //         data: {
+                //             user_id: newUser.user_id,
+                //             userName: newUser.name,
+                //             orderId,
+                //             paymentId,
+                //             amount,
+                //             status: "paid",
+                //             type: "Signup",
+                //         },
+                //     }),
+                //     prisma.temporder.delete({ where: { orderId } }),
+                // ]);
+
+                // Delete Temp Order
+                await prisma.temporder.delete({ where: { orderId } });
+                console.log('✅ Temp Order Deleted');
+
+
                 console.log("✅ Transaction Recorded & Temp Order Deleted");
-                return res.status(200).json({ message: `${newUser.name} has been registered successfully` });}
+                return res.status(200).json({ message: `${newUser.name} has been registered successfully` });
+            }
 
             case "payment.failed": {
                 console.log("❌ Payment Failed:", event.payload.payment.entity);
@@ -684,4 +713,4 @@ const renewSubscription = async (req, res) => {
 
 
 
-module.exports = {getTransactionsByUser ,getAllTransactions ,getTransactionsByEmployee, createOrder, paymentVerify, renewSubscription};
+module.exports = { getTransactionsByUser, getAllTransactions, getTransactionsByEmployee, createOrder, paymentVerify, renewSubscription };

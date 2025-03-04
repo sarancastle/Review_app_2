@@ -115,6 +115,7 @@ CREATE TABLE "Transaction" (
     "userName" TEXT NOT NULL,
     "paymentId" TEXT NOT NULL,
     "amount" INTEGER NOT NULL,
+    "type" TEXT NOT NULL,
     "status" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "employee_id" TEXT NOT NULL,
@@ -126,6 +127,7 @@ CREATE TABLE "Transaction" (
 CREATE TABLE "Revenue" (
     "revenue_id" TEXT NOT NULL,
     "user_id" TEXT NOT NULL,
+    "userName" TEXT NOT NULL,
     "orderId" TEXT NOT NULL,
     "amount" INTEGER NOT NULL,
     "status" TEXT NOT NULL,
@@ -169,6 +171,9 @@ CREATE UNIQUE INDEX "Review_review_id_key" ON "Review"("review_id");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Transaction_paymentId_key" ON "Transaction"("paymentId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Revenue_orderId_key" ON "Revenue"("orderId");
 
 -- AddForeignKey
 ALTER TABLE "User" ADD CONSTRAINT "User_employee_id_fkey" FOREIGN KEY ("employee_id") REFERENCES "Employees"("employee_id") ON DELETE CASCADE ON UPDATE CASCADE;

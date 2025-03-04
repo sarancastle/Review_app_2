@@ -69,7 +69,7 @@ const getTransactionsByUser = async (req, res) => {
 const createOrder = async (req, res) => {
     try {
         const data = req.body;
-        const amount = 19
+        const amount =749
       
         const order = await razorpay.orders.create({
             amount: amount *100,
@@ -99,101 +99,156 @@ const createOrder = async (req, res) => {
     }
 };
 
-// 2. Razorpay Webhook for Payment Confirmation
 // const paymentVerify = async (req, res) => {
 //     try {
-        
-        
-//         const webhookBody = req.body;
-//         const webhookSignature = req.headers["x-razorpay-signature"];
+//         console.log('🔹 Webhook Received!');
+
+//         const webhookBody = req.rawBody;
+//         if (!webhookBody) {
+//             console.log('❌ Missing Raw Body!');
+//             return res.status(400).json({ message: 'Invalid webhook request' });
+//         }
+
 //         const webhookSecret = "J3JKqWCm0aGWbMoktLkyUEts";
+//         const webhookSignature = req.headers['x-razorpay-signature'];
 
-//         console.log(webhookBody)
-//         console.log(webhookSignature)
-//         console.log(webhookSecret)
+//         console.log('🔹 Received Signature:', webhookSignature);
+//         console.log('🔹 Expected Secret:', webhookSecret);
 
-//         if (!webhookBody || !webhookSignature || !webhookSecret) {
-//             return res.status(400).json({ message: "Invalid webhook request" });
+//         if (!webhookSecret || !webhookSignature) {
+//             console.log('❌ Missing Secret or Signature');
+//             return res.status(400).json({ message: 'Invalid webhook request' });
 //         }
 
-//         // Verify webhook signature
+//         // Verify Signature
 //         const expectedSignature = crypto
-//             .createHmac("sha256", webhookSecret)
-//             .update(webhookBody)
-//             .digest("hex");
-//              console.log(expectedSignature)
+//             .createHmac('sha256', webhookSecret)
+//             .update(webhookBody) // Ensure raw body is used
+//             .digest('hex');
+
+//         console.log('🔹 Computed Signature:', expectedSignature);
+
 //         if (expectedSignature !== webhookSignature) {
-//             return res.status(400).json({ message: "Invalid webhook signature" });
+//             console.log('❌ Invalid Signature!');
+//             return res.status(400).json({ message: 'Invalid webhook signature' });
 //         }
 
+//         // Parse Webhook Event
 //         const event = JSON.parse(webhookBody);
-//         console.log("Received Webhook Event:", event);
 
-//         if (event.event === "payment.captured") {
-//             console.log(paymentDetails)
-//             console.log(paymentId)
-//             console.log(orderId)
-//             const paymentDetails = event.payload.payment.entity;
-//             const orderId = paymentDetails.order_id;
-//             const paymentId = paymentDetails.id;
-//             const amount = paymentDetails.amount / 100; // Convert paise to INR
+         
 
-//             // Find temporary order by orderId
-//             const tempOrder = await prisma.temporder.findUnique({ where: { orderId } });
+//         switch (event.event) {
+//             case 'payment.captured': {
+//                 const paymentDetails = event.payload.payment.entity;
+//                 const orderId = paymentDetails.order_id;
+//                 const paymentId = paymentDetails.id;
+//                 const amount = paymentDetails.amount / 100;
 
-//             if (!tempOrder) {
-//                 return res.status(404).json({ message: "Temporary order not found" });
+//                 console.log('🔹 Payment ID:', paymentId);
+//                 console.log('🔹 Order ID:', orderId);
+//                 console.log('🔹 Amount:', amount);
+
+
+
+//                 // Fetch Temp Order
+//                 const tempOrder = await prisma.temporder.findUnique({ where: { orderId } });
+//                 console.log('🔹 Fetched Temp Order:', tempOrder);
+
+//                 // Extract Referral Code from Temp Order
+//          let referralCode = tempOrder.referralCode;
+//          const defaultReferralCode = "WZ25FEB27-1054";
+//          const referralSources = ["Google", "Facebook", "Instagram"];
+ 
+//          if (referralSources.includes(referralCode)) {
+//              referralCode = defaultReferralCode;
+//          }
+ 
+//          console.log('🔹 Referral Code:', referralCode);
+ 
+//          // Find Staff using Referral Code
+//          const Staff = await prisma.employees.findUnique({
+//              where: { referralCode },
+//          });
+ 
+//          if (!Staff) {
+//              console.log('❌ Invalid Referral Code!');
+//              return res.status(404).json({ message: "Invalid Referral Code" });
+//          }
+ 
+//          console.log('🔹 Found Staff:', Staff);
+//          console.log("employeed_id",Staff.employee_id)
+
+//                 if (!tempOrder) {
+//                     console.log('❌ Temp Order Not Found!');
+//                     return res.status(404).json({ message: 'Temporary order not found' });
+//                 }
+
+//                 // Register New User
+//                 const newUser = await prisma.user.create({
+//                     data: {
+//                         name: tempOrder.fullName,
+//                         email: tempOrder.email,
+//                         phoneNumber: tempOrder.phone,
+//                         password: tempOrder.password,
+//                         placeId: tempOrder.placeId,
+//                         businessName: tempOrder.businessName,
+//                         businessType: tempOrder.businessType,
+//                         referralCode: tempOrder.referralCode,
+//                         employee_id: Staff.employee_id,
+//                         isActive: true,
+//                         subscriptionStartDate: new Date(),
+//                         subscriptionEndDate: new Date(Date.now() + 24 * 60 * 60 * 1000),
+//                     },
+//                 });
+
+//                 console.log('✅ New User Created:', newUser);
+
+//                 const dashboard = await prisma.dashboard.create({
+//                     data: { user_id: newUser.user_id },
+//                 });
+
+//                 console.log('✅ New User Created:', dashboard);
+
+//                 // Create Transaction Record
+//                 const jarom =await prisma.transaction.create({
+//                     data: {
+//                         user_id: newUser.user_id,
+//                         userName:newUser.name,
+//                         employee_id:newUser.employee_id,
+//                         orderId,
+//                         paymentId,
+//                         amount,
+//                         status: 'paid',
+//                     },
+//                 });
+
+//                 console.log('✅ Transaction-Recorded',jarom);
+
+//                 // Delete Temp Order
+//                 await prisma.temporder.delete({ where: { orderId } });
+
+//                 console.log('✅ Temp Order Deleted');
+
+//                 return res.status(200).json({ message: `${newUser.name} has been registered successfully` });
 //             }
 
-//             let referralCode = tempOrder.referralCode || "WZ25FEB17-5531"; // Default referral
+//             case 'payment.failed': {
+//                 console.log('❌ Payment Failed:', event.payload.payment.entity);
+//                 return res.status(200).json({ message: 'Payment failed event logged' });
+//             }
 
-//             // Create new user from Temporder details
-//             const newUser = await prisma.user.create({
-//                 data: {
-//                     name: tempOrder.fullName,
-//                     email: tempOrder.email,
-//                     phoneNumber: tempOrder.phone,
-//                     password: tempOrder.password,
-//                     placeId: tempOrder.placeId,
-//                     businessName: tempOrder.businessName,
-//                     businessType: tempOrder.businessType,
-//                     referralCode,
-//                     isActive: true,
-//                     subscriptionStartDate: new Date(),
-//                     subscriptionEndDate: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24-hour expiry
-//                 },
-//             });
-
-//             // Create transaction entry
-//             await prisma.transaction.create({
-//                 data: {
-//                     user_id: newUser.user_id,
-//                     orderId,
-//                     paymentId,
-//                     amount,
-//                     status: "paid",
-//                 },
-//             });
-
-//             // Delete temporary order
-//             await prisma.temporder.delete({ where: { orderId } });
-
-//             return res.status(200).json({ message: `${newUser.name} has been registered successfully` });
+//             default:
+//                 console.log('⚠️ Unhandled Event Type:', event.event);
+//                 return res.status(200).json({ message: 'Unhandled event' });
 //         }
-
-//         if (event.event === "payment.failed") {
-//             console.log("Payment failed:", event.payload.payment.entity);
-//             return res.status(200).json({ message: "Payment failed event logged" });
-//         }
-
-//         console.log("Unhandled event:", event.event);
-//         return res.status(200).json({ message: "Unhandled event" });
-
 //     } catch (error) {
-//         console.error("Webhook processing error:", error);
-//         return res.status(500).json({ message: "Internal server error" });
+//         console.error('🔥 Webhook Processing Error:', error);
+//         return res.status(500).json({ message: 'Internal server error' });
 //     }
 // };
+
+
 
 
 
@@ -234,55 +289,62 @@ const paymentVerify = async (req, res) => {
         // Parse Webhook Event
         const event = JSON.parse(webhookBody);
 
-         
-
+     
         switch (event.event) {
-            case 'payment.captured': {
+            case "payment.captured": {
                 const paymentDetails = event.payload.payment.entity;
                 const orderId = paymentDetails.order_id;
                 const paymentId = paymentDetails.id;
                 const amount = paymentDetails.amount / 100;
 
-                console.log('🔹 Payment ID:', paymentId);
-                console.log('🔹 Order ID:', orderId);
-                console.log('🔹 Amount:', amount);
+                console.log("✅ Payment Captured:", { orderId, paymentId, amount });
 
+                // Check if it's a Subscription Renewal
+                const renewal = await prisma.revenue.findUnique({ where: { orderId } });
 
+                if (renewal) {
+                    const updatedUser = await prisma.user.update({
+                        where: { user_id: renewal.user_id },
+                        data: {
+                            // subscriptionEndDate: new Date(
+                            //     new Date().setMonth(new Date().getMonth() + 1)
+                            // ), // Extend by 1 month
+                            subscriptionEndDate: new Date(Date.now() + 2 * 60 * 1000) // 2 minutes from now
+                        },
+                    });
 
-                // Fetch Temp Order
-                const tempOrder = await prisma.temporder.findUnique({ where: { orderId } });
-                console.log('🔹 Fetched Temp Order:', tempOrder);
+                    console.log("✅ Subscription Renewed:", updatedUser);
 
-                // Extract Referral Code from Temp Order
-         let referralCode = tempOrder.referralCode;
-         const defaultReferralCode = "WZ25FEB27-1054";
-         const referralSources = ["Google", "Facebook", "Instagram"];
- 
-         if (referralSources.includes(referralCode)) {
-             referralCode = defaultReferralCode;
-         }
- 
-         console.log('🔹 Referral Code:', referralCode);
- 
-         // Find Staff using Referral Code
-         const Staff = await prisma.employees.findUnique({
-             where: { referralCode },
-         });
- 
-         if (!Staff) {
-             console.log('❌ Invalid Referral Code!');
-             return res.status(404).json({ message: "Invalid Referral Code" });
-         }
- 
-         console.log('🔹 Found Staff:', Staff);
-         console.log("employeed_id",Staff.employee_id)
+                    await prisma.$transaction([
+                        prisma.transaction.create({
+                            data: {
+                                user_id: updatedUser.user_id,
+                                userName: updatedUser.name,
+                                orderId,
+                                paymentId,
+                                amount,
+                                status: "paid",
+                                type: "Subscription Repaid",
+                            },
+                        }),
+                        prisma.revenue.update({
+                            where: { orderId },
+                            data: { status: "paid" },
+                        }),
+                    ]);
 
-                if (!tempOrder) {
-                    console.log('❌ Temp Order Not Found!');
-                    return res.status(404).json({ message: 'Temporary order not found' });
+                    console.log("✅ Revenue Recorded for Renewal");
+                    return res.status(200).json({ message: "Subscription renewed successfully" });
                 }
 
-                // Register New User
+                // Handle New User Registration
+                const tempOrder = await prisma.temporder.findUnique({ where: { orderId } });
+
+                if (!tempOrder) {
+                    console.log("❌ Temp Order Not Found!");
+                    return res.status(404).json({ message: "Temporary order not found" });
+                }
+
                 const newUser = await prisma.user.create({
                     data: {
                         name: tempOrder.fullName,
@@ -293,158 +355,306 @@ const paymentVerify = async (req, res) => {
                         businessName: tempOrder.businessName,
                         businessType: tempOrder.businessType,
                         referralCode: tempOrder.referralCode,
-                        employee_id: Staff.employee_id,
                         isActive: true,
                         subscriptionStartDate: new Date(),
-                        subscriptionEndDate: new Date(Date.now() + 24 * 60 * 60 * 1000),
+                        subscriptionEndDate: new Date(Date.now() + 2 * 60 * 1000) // 2 minutes from now
+                        // subscriptionEndDate: new Date(new Date().setMonth(new Date().getMonth() + 1)),
                     },
                 });
 
-                console.log('✅ New User Created:', newUser);
+                console.log("✅ New User Created:", newUser);
 
-                const dashboard = await prisma.dashboard.create({
-                    data: { user_id: newUser.user_id },
-                });
+                await prisma.$transaction([
+                    prisma.dashboard.create({ data: { user_id: newUser.user_id } }),
+                    prisma.transaction.create({
+                        data: {
+                            user_id: newUser.user_id,
+                            userName: newUser.name,
+                            orderId,
+                            paymentId,
+                            amount,
+                            status: "paid",
+                            type: "Signup",
+                        },
+                    }),
+                    prisma.temporder.delete({ where: { orderId } }),
+                ]);
 
-                console.log('✅ New User Created:', dashboard);
-
-                // Create Transaction Record
-                const jarom =await prisma.transaction.create({
-                    data: {
-                        user_id: newUser.user_id,
-                        userName:newUser.name,
-                        employee_id:newUser.employee_id,
-                        orderId,
-                        paymentId,
-                        amount,
-                        status: 'paid',
-                    },
-                });
-
-                console.log('✅ Transaction-Recorded',jarom);
-
-                // Delete Temp Order
-                await prisma.temporder.delete({ where: { orderId } });
-
-                console.log('✅ Temp Order Deleted');
-
+                console.log("✅ Transaction Recorded & Temp Order Deleted");
                 return res.status(200).json({ message: `${newUser.name} has been registered successfully` });
             }
 
-            case 'payment.failed': {
-                console.log('❌ Payment Failed:', event.payload.payment.entity);
-                return res.status(200).json({ message: 'Payment failed event logged' });
+            case "payment.failed": {
+                console.log("❌ Payment Failed:", event.payload.payment.entity);
+                return res.status(200).json({ message: "Payment failed event logged" });
             }
 
             default:
-                console.log('⚠️ Unhandled Event Type:', event.event);
-                return res.status(200).json({ message: 'Unhandled event' });
+                console.log("⚠️ Unhandled Event Type:", event.event);
+                return res.status(200).json({ message: "Unhandled event" });
         }
     } catch (error) {
-        console.error('🔥 Webhook Processing Error:', error);
-        return res.status(500).json({ message: 'Internal server error' });
+        console.error("🔥 Webhook Processing Error:", error);
+        return res.status(500).json({ message: "Internal server error" });
     }
 };
 
-
-
-
-// const paymentVerify = async (req,res)=>{
-//     const webhookBody = req.rawBody; // Ensure rawBody middleware is in use
-//     const webhookSignature = req.headers['x-razorpay-signature'];
-//     const webhookSecret = "J3JKqWCm0aGWbMoktLkyUEts";
-
-//     if (!webhookBody) {
-//         // console.error('Webhook body is empty or undefined');
-//         return res.status(400).send('Invalid request body');
-//     }
-
-//     try {
-//         const expectedSignature = crypto
-//             .createHmac('sha256', webhookSecret)
-//             .update(webhookBody)
-//             .digest('hex');
-
-//         if (expectedSignature !== webhookSignature) {
-//             // console.error('Invalid webhook signature');
-//             return res.status(400).send('Invalid webhook signature');
-//         }
-
-//         const event = JSON.parse(webhookBody);
-
-//         switch (event.event) {
-// }
-
-
-
-// 3. Renew Subscription
 const renewSubscription = async (req, res) => {
     try {
-        const { userId } = req.body;
-        const user = await prisma.user.findUnique({ where: { user_id: userId } });
-        if (!user) return res.status(404).json({ message: "User not found" });
-        if (user.isActive) return res.json({ message: "Subscription is still active" });
-        const order = await razorpay.orders.create({
-            amount: 99900,
-            currency: "INR",
-            receipt: crypto.randomUUID(),
-            payment_capture: 1
+        const { user_id } = req.body;
+        const amount = 749; // Subscription renewal amount
+
+        const user = await prisma.user.findUnique({
+            where: { user_id },
+            select: { name: true },
         });
+
+        if (!user) {
+            return res.status(404).json({ error: "User not found" });
+        }
+
+        // Create a new Razorpay order
+        const order = await razorpay.orders.create({
+            amount: amount * 100, // Convert to paise
+            currency: "INR",
+            receipt: `sub_renew_${user_id}_${Date.now()}`,
+        });
+
+        console.log("🔹 Subscription Renewal Order Created:", order);
+
+        // Store renewal request in `revenue` model
         await prisma.revenue.create({
             data: {
-                user_id: user.user_id,
-                amount: 99900,
+                user_id,
+                userName: user.name,
                 orderId: order.id,
-                status: "pending"
-            }
+                amount,
+                status: "pending",
+            },
         });
-        res.status(200).json({ success: true, order, message: "Please complete the payment to renew subscription" });
-    } catch (error) {
-        
-            res.status(500).json({ error: "Internal server error" });
 
-    }
-};
-
-// 4. Verify Renewal Payment
-const verifyRenewalPayment = async (req, res) => {
-    try {
-        const signature = req.headers["x-razorpay-signature"];
-        const expectedSignature = crypto.createHmac("sha256", "YOUR_RAZORPAY_SECRET")
-            .update(JSON.stringify(req.body))
-            .digest("hex");
-        if (signature !== expectedSignature) {
-            return res.status(400).json({ message: "Invalid Signature" });
-        }
-        const payment = req.body.payload.payment.entity;
-        if (payment.status === "captured") {
-            const revenueRecord = await prisma.revenue.findUnique({ where: { orderId: payment.order_id } });
-            if (!revenueRecord) return res.status(404).json({ message: "Revenue record not found" });
-            const user = await prisma.user.update({
-                where: { user_id: revenueRecord.user_id },
-                data: {
-                    isActive: true,
-                    subscriptionStartDate: new Date(),
-                    subscriptionEndDate: new Date(new Date().setMonth(new Date().getMonth() + 1))
-                }
-            });
-            await prisma.revenue.update({ where: { id: revenueRecord.id }, data: { status: "paid" } });
-            await prisma.transaction.create({
-                data: {
-                    user_id: user.user_id,
-                    orderId: payment.order_id,
-                    paymentId: payment.id,
-                    amount: payment.amount,
-                    status: "paid"
-                }
-            });
-            res.status(200).json({ message: `Subscription renewed successfully for ${user.name}` });
-        } else {
-            res.status(400).json({ message: "Payment not captured" });
-        }
+        res.status(200).json({ success: true, order });
     } catch (error) {
+        console.error("🔥 Error Renewing Subscription:", error);
         res.status(500).json({ error: "Internal server error" });
     }
 };
 
-module.exports = {getTransactionsByUser ,getAllTransactions ,getTransactionsByEmployee, createOrder, paymentVerify, renewSubscription, verifyRenewalPayment };
+// const paymentVerify = async (req, res) => {
+//     try {
+//         console.log("🔹 Webhook Received!");
+
+//         const webhookBody = req.rawBody;
+//         if (!webhookBody) {
+//             console.log("❌ Missing Raw Body!");
+//             return res.status(400).json({ message: "Invalid webhook request" });
+//         }
+
+//         const webhookSecret = "YOUR_WEBHOOK_SECRET";
+//         const webhookSignature = req.headers["x-razorpay-signature"];
+
+//         // Verify Signature
+//         const expectedSignature = crypto
+//             .createHmac("sha256", webhookSecret)
+//             .update(webhookBody)
+//             .digest("hex");
+
+//         if (expectedSignature !== webhookSignature) {
+//             console.log("❌ Invalid Signature!");
+//             return res.status(400).json({ message: "Invalid webhook signature" });
+//         }
+
+//         // Parse Webhook Event
+//         const event = JSON.parse(webhookBody);
+
+//         switch (event.event) {
+//             case "payment.captured": {
+//                 const paymentDetails = event.payload.payment.entity;
+//                 const orderId = paymentDetails.order_id;
+//                 const paymentId = paymentDetails.id;
+//                 const amount = paymentDetails.amount / 100;
+
+//                 console.log("✅ Payment Captured:", { orderId, paymentId, amount });
+
+//                 // Check if it's a Subscription Renewal
+//                 const renewal = await prisma.revenue.findUnique({ where: { orderId } });
+
+//                 if (renewal) {
+//                     // Extend Subscription
+//                     const updatedUser = await prisma.user.update({
+//                         where: { user_id: renewal.user_id },
+//                         data: {
+//                             subscriptionEndDate: new Date(Date.now() + 24 * 60 * 60 * 1000),
+//                         },
+//                     });
+
+//                     console.log("✅ Subscription Renewed:", updatedUser);
+
+//                     await prisma.transaction.create({
+//                         data: {
+//                             user_id: updatedUser.user_id,
+//                             userName: updatedUser.name,
+//                             orderId,
+//                             paymentId,
+//                             amount,
+//                             status: "paid",
+//                             type: "Subscription Repaid",  // More specific type
+//                         },
+//                     });
+
+//                     // Log Revenue
+//                     await prisma.revenue.create({
+//                         data: {
+//                             user_id: updatedUser.user_id,
+//                             orderId,
+//                             amount,
+//                             status: "paid",
+//                         },
+//                     });
+
+//                     console.log("✅ Revenue Recorded for Renewal");
+//                     return res.status(200).json({ message: "Subscription renewed successfully" });
+//                 }
+
+//                 // Handle New User Registration
+//                 const tempOrder = await prisma.temporder.findUnique({ where: { orderId } });
+
+//                 if (!tempOrder) {
+//                     console.log("❌ Temp Order Not Found!");
+//                     return res.status(404).json({ message: "Temporary order not found" });
+//                 }
+
+//                 // Register New User
+//                 const newUser = await prisma.user.create({
+//                     data: {
+//                         name: tempOrder.fullName,
+//                         email: tempOrder.email,
+//                         phoneNumber: tempOrder.phone,
+//                         password: tempOrder.password,
+//                         placeId: tempOrder.placeId,
+//                         businessName: tempOrder.businessName,
+//                         businessType: tempOrder.businessType,
+//                         referralCode: tempOrder.referralCode,
+//                         isActive: true,
+//                         subscriptionStartDate: new Date(),
+//                         subscriptionEndDate: new Date(Date.now() + 24 * 60 * 60 * 1000),
+//                     },
+//                 });
+
+//                 console.log("✅ New User Created:", newUser);
+
+//                 await prisma.dashboard.create({ data: { user_id: newUser.user_id } });
+
+//                 // Create Transaction Record
+//                 await prisma.transaction.create({
+//                     data: {
+//                         user_id: newUser.user_id,
+//                         userName: newUser.name,
+//                         orderId,
+//                         paymentId,
+//                         amount,
+//                         status: "paid",
+//                         type: "Signup", 
+//                     },
+//                 });
+
+//                 console.log("✅ Transaction Recorded");
+
+//                 // Delete Temp Order
+//                 await prisma.temporder.delete({ where: { orderId } });
+
+//                 return res.status(200).json({ message: `${newUser.name} has been registered successfully` });
+//             }
+
+//             case "payment.failed": {
+//                 console.log("❌ Payment Failed:", event.payload.payment.entity);
+//                 return res.status(200).json({ message: "Payment failed event logged" });
+//             }
+
+//             default:
+//                 console.log("⚠️ Unhandled Event Type:", event.event);
+//                 return res.status(200).json({ message: "Unhandled event" });
+//         }
+//     } catch (error) {
+//         console.error("🔥 Webhook Processing Error:", error);
+//         return res.status(500).json({ message: "Internal server error" });
+//     }
+// };
+
+
+
+// const renewSubscription = async (req, res) => {
+//     try {
+//         const { user_id } = req.body;
+//         const amount = 749; // Subscription renewal amount
+
+//         // Fetch user details
+//         const user = await prisma.user.findUnique({
+//             where: { user_id },
+//             select: { name: true }, // Assuming the name field exists in the User model
+//         });
+
+//         if (!user) {
+//             return res.status(404).json({ error: "User not found" });
+//         }
+
+//         // Create a new Razorpay order
+//         const order = await razorpay.orders.create({
+//             amount: amount * 100, // Convert to paise
+//             currency: "INR",
+//         });
+
+//         console.log("🔹 Subscription Renewal Order Created:", order);
+
+//         // Store renewal request in `revenue` model
+//         await prisma.revenue.create({
+//             data: {
+//                 user_id,
+//                 userName: user.name, // Store the user's name
+//                 orderId: order.id,
+//                 amount,
+//                 status: "pending",
+//             },
+//         });
+
+//         res.status(200).json({ success: true, order });
+//     } catch (error) {
+//         console.error("🔥 Error Renewing Subscription:", error);
+//         res.status(500).json({ error: "Internal server error" });
+//     }
+// };
+
+// const renewSubscription = async (req, res) => {
+//     try {
+//         const { user_id } = req.body;
+//         const amount = 749; // Subscription renewal amount
+
+//         // Create a new Razorpay order
+//         const order = await razorpay.orders.create({
+//             amount: amount * 100,
+//             currency: "INR",
+//         });
+
+//         console.log("🔹 Subscription Renewal Order Created:", order);
+
+//         // Store renewal request
+//         await prisma.renewal.create({
+//             data: {
+//                 userId: user_id,
+//                 orderId: order.id,
+//                 amount,
+//                 status: "pending",
+//             },
+//         });
+
+//         res.status(200).json({ success: true, order });
+//     } catch (error) {
+//         console.error("🔥 Error Renewing Subscription:", error);
+//         res.status(500).json({ error: "Internal server error" });
+//     }
+// };
+
+
+
+
+module.exports = {getTransactionsByUser ,getAllTransactions ,getTransactionsByEmployee, createOrder, paymentVerify, renewSubscription};

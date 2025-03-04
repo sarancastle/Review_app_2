@@ -51,7 +51,6 @@ router.get("/user-settlement",statement)
 router.post("/create-order",createOrder)
 router.post("/razorpay-webhook",paymentVerify)//WEBHOOK
 router.post("/renew-subscription", renewSubscription); 
-router.post("/verify-renewal-payment", verifyRenewalPayment)//WEBHOOK
 router.get("/transactions",getAllTransactions)
 router.get("/transactions/:employeeId",getTransactionsByEmployee)
 router.get("/user-transactions/:userId",getTransactionsByUser)

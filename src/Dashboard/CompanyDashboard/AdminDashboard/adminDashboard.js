@@ -100,93 +100,139 @@ const userCount = async (req, res) => {
 
 const statement = async (req, res) => {
     try {
-        // Get total and active users from the database
+        // Get total and active users
         const totalUsers = await prisma.user.count();
         const activeUsers = await prisma.user.count({ where: { isActive: true } });
 
-        
-
-        // Base cost per user
+        // Revenue Details Per User
         const baseCostPerUser = 749;
+        const perUserRevenue = 521;
+        const expectedPerUserRevenue = 540;
+        const referralBonusPerUser = 209;
+        const additionalChargesPerUser = 19;
 
         // Expected Settlement Amount
         const expectedSettlementAmount = {
             perUser: {
-                perUserRevenue: `Rs: ${540}`,
-                referralBonusPerUser: `Rs: ${209}`,
-                additionalChargesPerUser: `Rs: ${19}`,
+                perUserRevenue: `Rs: ${expectedPerUserRevenue}`,
+                referralBonusPerUser: `Rs: ${referralBonusPerUser}`,
+                additionalChargesPerUser: `Rs: ${additionalChargesPerUser}`,
             },
             revenue: {
-                totalRevenue: `Rs: ${activeUsers * 540}`,
-                totalReferralBonus: `Rs: ${activeUsers * 209}`,
-                totalAdditionalCharges: `Rs: ${activeUsers * 19}`,
+                totalRevenue: `Rs: ${activeUsers * expectedPerUserRevenue}`,
+                totalReferralBonus: `Rs: ${activeUsers * referralBonusPerUser}`,
+                totalAdditionalCharges: `Rs: ${activeUsers * additionalChargesPerUser}`,
             },
         };
 
-        // Settlement Amount (Expected)
+        // Actual Settlement Amount
         const actualSettlementAmount = {
             perUser: {
-                perUserRevenue: `Rs: ${521}`,
-                referralBonusPerUser: `Rs: ${209}`,
-                additionalChargesPerUser: `Rs: ${19}`,
+                perUserRevenue: `Rs: ${perUserRevenue}`,
+                referralBonusPerUser: `Rs: ${referralBonusPerUser}`,
+                additionalChargesPerUser: `Rs: ${additionalChargesPerUser}`,
             },
             revenue: {
-                totalRevenue: `Rs: ${activeUsers * 521}`,
-                totalReferralBonus: `Rs: ${activeUsers * 209}`,
-                totalAdditionalCharges: `Rs: ${activeUsers * 19}`,
+                totalRevenue: `Rs: ${activeUsers * perUserRevenue}`,
+                totalReferralBonus: `Rs: ${activeUsers * referralBonusPerUser}`,
+                totalAdditionalCharges: `Rs: ${activeUsers * additionalChargesPerUser}`,
             },
         };
 
-
-        // Calculate values
-        const totalRevenue = activeUsers * 521; // Total revenue calculation
-        const appExpenditure = 6000; // Fixed app expenditure
-        const totalRevenueAfterExpense = totalRevenue - appExpenditure; // Revenue after expenses
-        const sharePerOwner = Math.round(totalRevenueAfterExpense / 3); // Equal share per owner (rounded)
+        // Calculate Share After Expenses
+        const totalRevenue = activeUsers * perUserRevenue;
+        const totalReferralBonus = activeUsers * referralBonusPerUser;
+        const totalAdditionalCharges = activeUsers * additionalChargesPerUser;
+        
+        // Adjust total revenue after deductions
+        const totalRevenueAfterSettlement = totalRevenue - totalReferralBonus - totalAdditionalCharges;
+        const appExpenditure = 6000;
+        const remainingAmount =  totalRevenueAfterSettlement - appExpenditure;
+        
+        const sharePerOwner = Math.round(remainingAmount / 3);
 
         // Share Calculation
         const Share = {
             totalRevenue: {
                 totalRevenue: `Rs: ${totalRevenue}`,
                 appExpenditure: `Rs: ${appExpenditure}`,
-                totalRevenueAfterExpenditure: `Rs: ${totalRevenueAfterExpense}`,
+                totalRevenueAfterSettlement: `Rs: ${totalRevenueAfterSettlement}`,
+                remainingAmount: `Rs: ${remainingAmount}`
             },
-            Antony:`Rs: ${sharePerOwner}`,
+            Antony: `Rs: ${sharePerOwner}`,
             Jarom: `Rs: ${sharePerOwner}`,
             Josen: `Rs: ${sharePerOwner}`
-            // Displaying app expenditure separately
         };
 
-        // Generate Summary Statement
-        //   const settlementStatement = `
-        // **Actual Settlement (Final Calculation)**
-        // Each active user was expected to generate ₹${settlementAmount.perUser.perUserRevenue} in revenue.
-        // The total expected revenue for ${activeUsers} active users was ₹${settlementAmount.revenue.totalRevenue}.
-        // A referral bonus of ₹${settlementAmount.perUser.referralBonusPerUser} per user was planned, totaling ₹${settlementAmount.revenue.totalReferralBonus}.
-        // Additional charges were expected at ₹${settlementAmount.perUser.additionalChargesPerUser} per user, adding up to ₹${settlementAmount.revenue.totalAdditionalCharges}.
+        // Fetch users grouped by month
+        const usersByMonth = await prisma.user.groupBy({
+            by: ['subscriptionStartDate'],
+            _count: { _all: true }
+        });
 
-        // **Expected Settlement (Planned)**
-        // The actual per-user revenue turned out to be ₹${actualSettlement.perUser.perUserRevenue}, resulting in a total revenue of ₹${actualSettlement.revenue.totalRevenue}.
-        // The final referral bonus paid was ₹${actualSettlement.perUser.referralBonusPerUser} per user, totaling ₹${actualSettlement.revenue.totalReferralBonus}.
-        // Additional charges collected were ₹${actualSettlement.perUser.additionalChargesPerUser} per user, bringing in ₹${actualSettlement.revenue.totalAdditionalCharges}.
-        //   `;
+        // Function to get month name and year
+        const getMonthYear = (date) => {
+            const options = { year: 'numeric', month: 'long' };
+            return new Date(date).toLocaleDateString('en-US', options);
+        };
 
-        // Sending the response
+        // Process Monthly Report
+        const monthlyReport = usersByMonth.reduce((acc, entry) => {
+            const monthYear = getMonthYear(entry.subscriptionStartDate);
+
+            if (!acc[monthYear]) {
+                acc[monthYear] = {
+                    month: monthYear,
+                    newUsers: 0,
+                    revenue: 0,
+                    referralBonus: 0,
+                    additionalCharges: 0,
+                    totalRevenueAfterSettlement: 0,
+                    remainingAmount: 0,
+                    shareOwners: {}
+                };
+            }
+
+            acc[monthYear].newUsers += entry._count._all;
+            acc[monthYear].revenue += entry._count._all * perUserRevenue;
+            acc[monthYear].referralBonus += entry._count._all * referralBonusPerUser;
+            acc[monthYear].additionalCharges += entry._count._all * additionalChargesPerUser;
+
+            // Calculate revenue after settlement
+            acc[monthYear].totalRevenueAfterSettlement = 
+                acc[monthYear].revenue - acc[monthYear].referralBonus - acc[monthYear].additionalCharges;
+            
+            acc[monthYear].remainingAmount=   acc[monthYear].totalRevenueAfterSettlement - appExpenditure;
+            const monthlySharePerOwner = Math.round(acc[monthYear].remainingAmount/ 3);
+
+            // Store share per owner
+            acc[monthYear].shareOwners = {
+                Jarom: `Rs: ${monthlySharePerOwner}`,
+                Antony: `Rs: ${monthlySharePerOwner}`,
+                Josen: `Rs: ${monthlySharePerOwner}`
+            };
+
+            return acc;
+        }, {});
+
+        // Sending response
         res.status(200).json({
             totalUsers,
             activeUsers,
             baseCostPerUser,
             expectedSettlementAmount,
             actualSettlementAmount,
-            Share
-
-            // settlementStatement, // Added human-readable report
+            Share,
+            monthlyReport: Object.values(monthlyReport) // Convert object to array
         });
+
     } catch (error) {
-        console.error("Error fetching user settlement data:", error);
+        console.error("Error fetching monthly report:", error);
         res.status(500).json({ error: "Internal Server Error" });
     }
 };
+
+
 
 const getAllAdmin = async (req, res) => {
     try {

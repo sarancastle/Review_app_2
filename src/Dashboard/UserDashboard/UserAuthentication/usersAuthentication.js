@@ -107,24 +107,27 @@ const userCheck =  async (req, res) => {
 const userLogin =  async (req, res) => {
     try {
         const data = req.body;
-       
+       console.log(data)
 
         // Validate the required fields
         if (!data.email || !data.password) {
             return res.status(400).json({ message: "Email and Password are required" });
         }
+        console.log(data.email)
 
         const isExistingUser = await prisma.user.findUnique({
             where: {
                 email: data.email
             },
         });
+        console.log(isExistingUser)
 
         if (!isExistingUser) {
             return res.status(404).json({ message: "User not found, please register and try again" });
         }
 
         const isPasswordValid = await bcrypt.compare(data.password, isExistingUser.password);
+        console.log(isPasswordValid)
 
         if (isPasswordValid) {
 

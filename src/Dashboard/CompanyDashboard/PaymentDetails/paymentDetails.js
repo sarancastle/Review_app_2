@@ -4,7 +4,7 @@ const bcrypt = require("bcryptjs");
 const Razorpay = require("razorpay");
 const crypto = require("crypto");
 
-const prisma = require('../..//prisma')
+const prisma = require('../..//prisma');
 const razorpay = new Razorpay({
     key_id: "rzp_test_wCUQcBRBFudBQm",
     key_secret: "J3JKqWCm0aGWbMoktLkyUEts"
@@ -30,12 +30,13 @@ const getTransactionsByEmployee = async (req, res) => {
 
     try {
         const transactions = await prisma.transaction.findMany({
-            where: { employee_id: employeeId }
+            where: { employee_id: employeeId },
         });
 
         if (transactions.length === 0) {
             return res.status(404).json({ message: 'No transactions found for this employee' });
         }
+        
 
         res.status(200).json(transactions);
     } catch (error) {
@@ -315,8 +316,8 @@ const paymentVerify = async (req, res) => {
 
                     console.log("✅ Subscription Renewed:", updatedUser);
 
-                    await prisma.$transaction([
-                        prisma.transaction.create({
+                    
+                       await prisma.transaction.create({
                             data: {
                                 user_id: updatedUser.user_id,
                                 userName: updatedUser.name,
@@ -327,11 +328,11 @@ const paymentVerify = async (req, res) => {
                                 type: "Subscription Repaid",
                             },
                         }),
-                        prisma.revenue.update({
+                      await prisma.revenue.update({
                             where: { orderId },
                             data: { status: "paid" },
                         }),
-                    ]);
+                    
 
                     console.log("✅ Revenue Recorded for Renewal");
                     return res.status(200).json({ message: "Subscription renewed successfully" });
@@ -474,7 +475,6 @@ const renewSubscription = async (req, res) => {
         const order = await razorpay.orders.create({
             amount: amount * 100, // Convert to paise
             currency: "INR",
-            receipt: `sub_renew_${user_id}_${Date.now()}`,
         });
 
         console.log("🔹 Subscription Renewal Order Created:", order);
@@ -492,7 +492,7 @@ const renewSubscription = async (req, res) => {
 
         res.status(200).json({ success: true, order });
     } catch (error) {
-        console.error("🔥 Error Renewing Subscription:", error);
+        console.error(" Error Renewing Subscription:", error);
         res.status(500).json({ error: "Internal server error" });
     }
 };

@@ -36,7 +36,7 @@ const getUserDashboardById = async (req, res) => {
         // Check if the subscription is inactive
         if (userDetails && !userDetails.user.isActive) {
             // console.log("User subscription is inactive. Redirecting to renew."); // Debug log
-            return res.status(403).json({
+            return res.json({
                 message: "Subscription inactive. Please renew.",
                 userName: userDetails.user.name,
                 businessName: userDetails.user.businessName

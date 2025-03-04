@@ -323,6 +323,7 @@ const paymentVerify = async (req, res) => {
                                 userName: updatedUser.name,
                                 orderId,
                                 paymentId,
+                                employee_id:updatedUser.employee_id,
                                 amount,
                                 status: "paid",
                                 type: "Subscription Repaid",

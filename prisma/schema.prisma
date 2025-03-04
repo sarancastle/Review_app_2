@@ -132,7 +132,7 @@ model Revenue {
   revenue_id         String @id @default(uuid())
   user_id            String
   userName           String
-  orderId            String
+  orderId            String @unique
   amount             Int
   status             String // "pending", "paid"
   createdAt          DateTime @default(now())

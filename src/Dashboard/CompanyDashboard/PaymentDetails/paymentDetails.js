@@ -337,33 +337,60 @@ const paymentVerify = async (req, res) => {
                     return res.status(200).json({ message: "Subscription renewed successfully" });
                 }
 
-                // Handle New User Registration
                 const tempOrder = await prisma.temporder.findUnique({ where: { orderId } });
-
+                
                 if (!tempOrder) {
                     console.log("❌ Temp Order Not Found!");
                     return res.status(404).json({ message: "Temporary order not found" });
                 }
-
+                
+                // Extract Referral Code
+                let referralCode = tempOrder.referralCode;
+                const defaultReferralCode = "WZ25MAR04-8605";
+                const referralSources = ["Google", "Facebook", "Instagram"];
+                
+                if (referralSources.includes(referralCode)) {
+                    referralCode = defaultReferralCode;
+                }
+                
+                console.log('🔹 Referral Code:', referralCode);
+                
+                // Find Staff using Referral Code
+                const staff = await prisma.staffUsers.findUnique({ where: { referralCode } });
+                
+                if (!staff) {
+                    console.log('❌ Invalid Referral Code!');
+                    return res.status(404).json({ message: "Invalid Referral Code" });
+                }
+                
+                console.log('🔹 Found Staff:', staff);
+                console.log("employee_id", staff.employee_id);
+                
+                // Hash Password (Ensure you installed bcrypt: npm install bcrypt)
+                const bcrypt = require('bcrypt');
+                const hashedPassword = await bcrypt.hash(tempOrder.password, 10);
+                
+                // Create New User
                 const newUser = await prisma.user.create({
                     data: {
                         name: tempOrder.fullName,
                         email: tempOrder.email,
                         phoneNumber: tempOrder.phone,
-                        password: tempOrder.password,
+                        password: hashedPassword,  // Secure password storage
                         placeId: tempOrder.placeId,
                         businessName: tempOrder.businessName,
                         businessType: tempOrder.businessType,
                         referralCode: tempOrder.referralCode,
+                        employee_id: staff.employee_id,
                         isActive: true,
                         subscriptionStartDate: new Date(),
-                        subscriptionEndDate: new Date(Date.now() + 2 * 60 * 1000) // 2 minutes from now
-                        // subscriptionEndDate: new Date(new Date().setMonth(new Date().getMonth() + 1)),
-                    },
+                        subscriptionEndDate: new Date(Date.now() + 2 * 60 * 1000), // 2 minutes from now
+                    }
                 });
-
+                
                 console.log("✅ New User Created:", newUser);
-
+                
+                // Transaction Handling
                 await prisma.$transaction([
                     prisma.dashboard.create({ data: { user_id: newUser.user_id } }),
                     prisma.transaction.create({
@@ -379,10 +406,9 @@ const paymentVerify = async (req, res) => {
                     }),
                     prisma.temporder.delete({ where: { orderId } }),
                 ]);
-
+                
                 console.log("✅ Transaction Recorded & Temp Order Deleted");
-                return res.status(200).json({ message: `${newUser.name} has been registered successfully` });
-            }
+                return res.status(200).json({ message: `${newUser.name} has been registered successfully` });}
 
             case "payment.failed": {
                 console.log("❌ Payment Failed:", event.payload.payment.entity);

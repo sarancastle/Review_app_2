@@ -369,7 +369,7 @@ const paymentVerify = async (req, res) => {
 
                 // Hash Password (Ensure you installed bcrypt: npm install bcrypt)
                 // const bcrypt = require('bcrypt');
-                const hashedPassword = await bcrypt.hash(tempOrder.password, 10);
+                // const hashedPassword = await bcrypt.hash(tempOrder.password, 10);
 
                 // Create New User
                 const newUser = await prisma.user.create({
@@ -377,7 +377,7 @@ const paymentVerify = async (req, res) => {
                         name: tempOrder.fullName,
                         email: tempOrder.email,
                         phoneNumber: tempOrder.phone,
-                        password: hashedPassword,  // Secure password storage
+                        password: tempOrder.password,  // Secure password storage
                         placeId: tempOrder.placeId,
                         businessName: tempOrder.businessName,
                         businessType: tempOrder.businessType,

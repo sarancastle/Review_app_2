@@ -402,6 +402,7 @@ const paymentVerify = async (req, res) => {
                     data: {
                         user_id: newUser.user_id,
                         userName: newUser.name,
+                        employee_id:newUser.employee_id,
                         orderId,
                         paymentId,
                         amount,

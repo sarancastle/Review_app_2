@@ -357,6 +357,7 @@ const paymentVerify = async (req, res) => {
                 
                 // Find Staff using Referral Code
                 const staff = await prisma.staffUsers.findUnique({ where: { referralCode } });
+                console.log("emp",staff.employee_id)
                 
                 if (!staff) {
                     console.log('❌ Invalid Referral Code!');

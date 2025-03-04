@@ -356,7 +356,7 @@ const paymentVerify = async (req, res) => {
                 console.log('🔹 Referral Code:', referralCode);
                 
                 // Find Staff using Referral Code
-                const staff = await prisma.staffUsers.findUnique({ where: { referralCode } });
+                const staff = await prisma.employees.findUnique({ where: { referralCode } });
                 console.log("employee_id",staff.employee_id)
                 
                 if (!staff) {

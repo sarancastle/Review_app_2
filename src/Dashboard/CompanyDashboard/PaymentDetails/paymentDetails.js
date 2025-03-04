@@ -368,7 +368,7 @@ const paymentVerify = async (req, res) => {
                 console.log("employee_id", staff.employee_id);
                 
                 // Hash Password (Ensure you installed bcrypt: npm install bcrypt)
-                const bcrypt = require('bcrypt');
+                // const bcrypt = require('bcrypt');
                 const hashedPassword = await bcrypt.hash(tempOrder.password, 10);
                 
                 // Create New User

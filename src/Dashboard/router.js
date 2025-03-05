@@ -36,14 +36,14 @@ router.get("/subscription/check/:id",protectedtRoute,subscriptionCheckById)
 router.get("/users/:user_id/helpdesk",protectedtRoute,getUserHelpdeskByUserId)
 
 //adminDashboard api
-router.get("/admin",protectedtRoute,roleBasedAccess(['ADMIN', 'STAFF']),getAllAdmin)
+router.get("/admin",protectedtRoute,roleBasedAccess(['ADMIN']),getAllAdmin)
 router.get("/admin/:id",
-    // protectedtRoute,roleBasedAccess(['admin', 'staff']),
+ protectedtRoute,roleBasedAccess(['ADMIN']),
     getParticularAdminById)
-router.get("/staff",protectedtRoute,roleBasedAccess(['ADMIN', 'STAFF']),getAllStaff)
-router.get("/users-help-center",protectedtRoute,roleBasedAccess(['ADMIN', 'STAFF']),getAllTickets)
-router.get("/users-help-center/:id",protectedtRoute,roleBasedAccess(['ADMIN', 'STAFF']),getParticularTickets)
-router.put("/users-help-center/:id/status",protectedtRoute,roleBasedAccess(['ADMIN', 'STAFF']),updateParticularTicketStatus)
+router.get("/staff",protectedtRoute,roleBasedAccess(['ADMIN']),getAllStaff)
+router.get("/users-help-center",protectedtRoute,roleBasedAccess(['ADMIN']),getAllTickets)
+router.get("/users-help-center/:id",protectedtRoute,roleBasedAccess(['ADMIN']),getParticularTickets)
+router.put("/users-help-center/:id/status",protectedtRoute,roleBasedAccess(['ADMIN']),updateParticularTicketStatus)
 router.get("/user-counts",userCount)
 router.get("/user-settlement",statement)
 

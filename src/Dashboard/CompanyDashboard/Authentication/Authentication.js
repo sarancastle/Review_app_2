@@ -20,9 +20,9 @@ const refresh= async (req, res) => {
             }
         })
         if (tokenValid) {
-            jwt.verify(tokenValid.refreshToken, 'ikeyqr', function (err) {
+            jwt.verify(tokenValid.refreshToken, 'ikeyqr', function (err,decoded) {
                 if (!err) {
-                    var accessToken = jwt.sign({ user_id: tokenValid.user_id }, 'ikeyqr', {
+                    var accessToken = jwt.sign({ user_id: tokenValid.user_id , role: decoded.role }, 'ikeyqr', {
                         expiresIn: "30m"
                     });
                     res.json({

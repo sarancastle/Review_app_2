@@ -16,7 +16,7 @@ function roleBasedAccess(requireRoles) {
         return res.status(401).json({ message: "Token Invalid", error: err.message });
       }
 
-      console.log(decoded);
+      console.log(decoded.role);
       console.log(requireRoles);
 
       // Check if the user's role is in the allowed roles array
@@ -26,7 +26,7 @@ function roleBasedAccess(requireRoles) {
 
       // Attach user information to request object
       req.user = decoded;
-      console.log(req.user)
+      console.log("khjk",req.user)
 
       next();
     });

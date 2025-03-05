@@ -134,6 +134,8 @@ const postUsersHelpCenter=  async (req, res) => {
 const getUserHelpdeskByUserId = async (req, res) => {
     const { user_id } = req.params;
     const { status } = req.query;
+    // console.log("jnlkn;",user_id)
+    // console.log("vhih",status)
 
     const validStatuses = ["OPEN", "IN_PROGRESS", "RESOLVED"];
 
@@ -144,7 +146,7 @@ const getUserHelpdeskByUserId = async (req, res) => {
                 ...(status && status !== "all" ? { status } : {}) // If status is provided & not "all", filter by status
             }
         });
-
+        console.log(tickets)
         res.status(200).json({ tickets });
     } catch (error) {
         // console.error("Error fetching dashboard:", error);

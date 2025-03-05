@@ -31,7 +31,7 @@ router.get("/employees/:id",protectedtRoute,staffDetailsById)
 router.get("/users/:id/dashboard",protectedtRoute,getUserDashboardById )
 router.delete("/review/:reviewId",protectedtRoute,deleteReview)
 router.post("/users-help-center",protectedtRoute,postUsersHelpCenter)
-router.get("/users/:user_id/helpdesk",protectedtRoute,getUserDashboardById)
+
 router.get("/subscription/check/:id",protectedtRoute,subscriptionCheckById)
 router.get("/users/:user_id/helpdesk",protectedtRoute,getUserHelpdeskByUserId)
 

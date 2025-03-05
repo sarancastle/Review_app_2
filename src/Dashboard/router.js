@@ -5,7 +5,7 @@ const { employeesForgotPassword, employeesCheckOtp, employeesOtpVerify, employee
 const { getUserDashboardById, deleteReview, postUsersHelpCenter, subscriptionCheckById, qrReviewById, getUserHelpdeskByUserId } = require("./UserDashboard/UserDashboard/userDashboard")
 const { getAllAdmin, getParticularAdminById, getAllStaff, getAllTickets, getParticularTickets, updateParticularTicketStatus, userCount, statement } = require("./CompanyDashboard/AdminDashboard/adminDashboard")
 const { staffDetailsById, getParticularStaffReferrals } = require("./CompanyDashboard/StaffDashboard/staffDashboard")
-const { createOrder, paymentVerify, renewSubscription, verifyRenewalPayment, getAllTransactions, getTransactionsByEmployee, getTransactionsByUser } = require("./CompanyDashboard/PaymentDetails/paymentDetails")
+const { createOrder, paymentVerify, renewSubscription, getAllTransactions, getTransactionsByEmployee, getTransactionsByUser } = require("./CompanyDashboard/PaymentDetails/paymentDetails")
 const protectedtRoute = require('../../protectedRoute')
 const roleBasedAccess = require("../../roleBasedAccess")
 
@@ -32,7 +32,7 @@ router.get("/users/:id/dashboard",protectedtRoute,getUserDashboardById )
 router.delete("/review/:reviewId",protectedtRoute,deleteReview)
 router.post("/users-help-center",protectedtRoute,postUsersHelpCenter)
 
-router.get("/subscription/check/:id",protectedtRoute,subscriptionCheckById)
+router.get("/subscription/check/:id",subscriptionCheckById)
 router.get("/users/:user_id/helpdesk",protectedtRoute,getUserHelpdeskByUserId)
 
 //adminDashboard api

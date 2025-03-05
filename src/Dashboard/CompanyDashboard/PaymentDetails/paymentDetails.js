@@ -308,7 +308,7 @@ const paymentVerify = async (req, res) => {
                         where: { user_id: renewal.user_id },
                         data: {
                             subscriptionStartDate: new Date(), // Set to the current time
-                            subscriptionEndDate: new Date(Date.now() + 2 * 60 * 1000), // Extend by 2 minutes
+                            subscriptionEndDate: new Date(Date.now() + 5 * 60 * 1000), // Extend by 2 minutes
                             isActive: true // Set to true
                         },
                     });
@@ -386,7 +386,7 @@ const paymentVerify = async (req, res) => {
                         employee_id: staff.employee_id,
                         isActive: true,
                         subscriptionStartDate: new Date(),
-                        subscriptionEndDate: new Date(Date.now() + 2 * 60 * 1000), // 2 minutes from now
+                        subscriptionEndDate: new Date(Date.now() + 5 * 60 * 1000), // 2 minutes from now
                     }
                 });
 

@@ -20,7 +20,7 @@ router.post("/auth/refresh",refresh)
 // employees Authentication api
 router.post("/employees/forgot-password", employeesForgotPassword)
 router.post("/employees/check-otp", employeesCheckOtp)
-router.post("/employees/verify-otp",protectedtRoute, employeesOtpVerify)
+router.post("/employees/verify-otp", employeesOtpVerify)
 router.post("/employees/register", employeesRegister)
 router.post("/employees/login", employeesLogin)
 router.post("/change-password",protectedtRoute, changePassword)

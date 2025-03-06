@@ -12,34 +12,34 @@ const transporter = nodemailer.createTransport({
 });
 
 
-const refresh= async (req, res) => {
-        const data = req.body;
-        const tokenValid = await prisma.token.findFirst({
-            where: {
-                refreshToken: data.refreshToken
-            }
-        })
-        if (tokenValid) {
-            jwt.verify(tokenValid.refreshToken, 'ikeyqr', function (err,decoded) {
-                if (!err) {
-                    var accessToken = jwt.sign({ user_id: tokenValid.user_id , role: decoded.role }, 'ikeyqr', {
-                        expiresIn: "30m"
-                    });
-                    res.json({
-                        accessToken: accessToken
-                    })
-                } else {
-                    res.json({
-                        message: "User Not Authenticated"
-                    })
-                }
-            });
-        } else {
-            res.json({
-                message: "No Token Found"
-            })
+const refresh = async (req, res) => {
+    const data = req.body;
+    const tokenValid = await prisma.token.findFirst({
+        where: {
+            refreshToken: data.refreshToken
         }
+    })
+    if (tokenValid) {
+        jwt.verify(tokenValid.refreshToken, 'ikeyqr', function (err, decoded) {
+            if (!err) {
+                var accessToken = jwt.sign({ user_id: tokenValid.user_id, role: decoded.role }, 'ikeyqr', {
+                    expiresIn: "30m"
+                });
+                res.json({
+                    accessToken: accessToken
+                })
+            } else {
+                res.json({
+                    message: "User Not Authenticated"
+                })
+            }
+        });
+    } else {
+        res.json({
+            message: "No Token Found"
+        })
     }
+}
 
 
 // employees forgot password
@@ -253,12 +253,12 @@ const employeesRegister = async (req, res) => {
 // login for employees ADMIN/STAFF
 const employeesLogin = async (req, res) => {
     try {
-        const data= req.body;
+        const data = req.body;
         console.log(data)
 
         // Check if user exists
         const isExistingUser = await prisma.employees.findUnique({
-            where: { employeeEmail:data.email }
+            where: { employeeEmail: data.email }
         });
 
         if (!isExistingUser) {
@@ -319,22 +319,21 @@ const changePassword = async (req, res) => {
             return res.status(404).json({ message: "Employee not found" });
         }
 
-        // Compare old password with stored hashed password
-        const isPasswordValid = await bcrypt.compare(oldPassword, employee.employeePassword);
-        if (!isPasswordValid) {
+
+      
+        if (oldPassword === employee.employeePassword) {
+            // Update password in the database
+            await prisma.employees.update({
+                where: { employeeEmail },
+                data: { employeePassword: newPassword }
+            });
+
+            res.status(200).json({ message: "Password updated successfully" });
+
+        } else {
             return res.status(400).json({ message: "Incorrect old password" });
         }
 
-        // Hash the new password before updating
-        const hashedNewPassword = await bcrypt.hash(newPassword, 10);
-
-        // Update password in the database
-        await prisma.employees.update({
-            where: { employeeEmail },
-            data: { employeePassword: hashedNewPassword }
-        });
-
-        res.status(200).json({ message: "Password updated successfully" });
     } catch (error) {
         console.error("Error updating password:", error);
         res.status(500).json({ message: "Internal Server Error" });
@@ -342,4 +341,4 @@ const changePassword = async (req, res) => {
 };
 
 
-module.exports = {refresh, employeesForgotPassword, employeesCheckOtp, employeesOtpVerify, employeesRegister, employeesLogin, changePassword }
+module.exports = { refresh, employeesForgotPassword, employeesCheckOtp, employeesOtpVerify, employeesRegister, employeesLogin, changePassword }

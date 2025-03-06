@@ -237,6 +237,7 @@ const userForgotPassword = async (req, res) => {
              email: data.email
          },
      });
+     console.log(user)
  
      if (!user) return res.json({ message: "User not found" });
      // console.log("Stored OTP:", user.otp);

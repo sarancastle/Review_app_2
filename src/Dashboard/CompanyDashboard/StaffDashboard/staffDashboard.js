@@ -1,9 +1,19 @@
 const prisma = require("../../prisma")
 
+const client = require("../../../../redis")
+
 // staff account setting
 const staffDetailsById = async (req, res) => {
     try {
         const { id } = req.params;
+
+        const cacheKey = `staff:${id}`;
+
+        // Check if data exists in Redis
+        const cachedData = await client.get(cacheKey);
+        if (cachedData) {
+            return res.status(200).json({ data: JSON.parse(cachedData) });
+        }
         const staffDetails = await prisma.employees.findUnique({
             where: { employee_id: id }
         });
@@ -15,6 +25,7 @@ const staffDetailsById = async (req, res) => {
 
         // Destructure and exclude the password
         const { employeePassword, ...rest } = staffDetails;
+        await client.set(cacheKey, JSON.stringify(rest), "EX", 86400);
 
         res.status(200).json({ data: rest });
     } catch (error) {

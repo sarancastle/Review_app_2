@@ -23,7 +23,7 @@ const userCheck =  async (req, res) => {
         });
 
         if (existingUser) {
-            return res.status(404).json({ message: "Already a User" });
+            return res.json({ message: "Already a User" });
         } else {
             res.status(200).json({
                 message: `You can register`,

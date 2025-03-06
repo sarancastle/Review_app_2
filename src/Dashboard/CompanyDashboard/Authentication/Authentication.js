@@ -186,6 +186,7 @@ const employeesOtpVerify = async (req, res) => {
     }
 }
 
+
 // registering the new employees ADMIN/STAFF
 const employeesRegister = async (req, res) => {
     try {

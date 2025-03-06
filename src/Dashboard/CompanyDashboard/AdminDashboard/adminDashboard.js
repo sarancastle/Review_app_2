@@ -1,5 +1,5 @@
 const prisma = require("../../prisma")
-const Redis = require('ioredis')
+// const Redis = require('ioredis')
 //const client = new Redis("rediss://default:AeANAAIjcDEwYmY4YTRhZGQyMTg0YjVlOTgxYmI0MDNiMjdjNDliY3AxMA@desired-toad-57357.upstash.io:6379");
 
 

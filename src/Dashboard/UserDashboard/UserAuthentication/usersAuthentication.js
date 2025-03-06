@@ -237,7 +237,7 @@ const userForgotPassword = async (req, res) => {
          },
      });
  
-     if (!user) return res.status(404).json({ message: "User not found" });
+     if (!user) return res.json({ message: "User not found" });
      // console.log("Stored OTP:", user.otp);
      // console.log("Provided OTP:", data.otp);
      // Check if OTP is valid and hasn't expired
@@ -246,7 +246,7 @@ const userForgotPassword = async (req, res) => {
      }
  
      if (user.otpExpiry < Date.now()) {
-        return res.status(404).json({ message: "OTP has expired" });
+        return res.json({ message: "OTP has expired" });
      }
  
      // OTP is valid and not expired, now reset the password

@@ -229,6 +229,7 @@ const userForgotPassword = async (req, res) => {
  const userOtpVerify = async (req, res) => {
     try{
      const data = req.body;
+     console.log(data)
  
      // Find user by email
      const user = await prisma.user.findUnique({

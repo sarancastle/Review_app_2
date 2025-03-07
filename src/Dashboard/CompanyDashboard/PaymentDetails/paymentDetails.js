@@ -476,7 +476,7 @@ const sendInvoiceEmail = async (transaction_id, name, email, orderId, paymentId,
         });
 
         let mailOptions = {
-            from: "thelogicqr@gmail.com",
+            from: config.EMAIL_ID,
             to: email,
             subject: `Invoice #${orderId} - Payment Confirmation`,
             html: `
@@ -546,7 +546,7 @@ const sendRenewalInvoiceEmail = async (transaction_id, email, name, paymentId, o
         });
 
         let mailOptions = {
-            from: "thelogicqr@gmail.com",
+            from: config.EMAIL_ID,
             to: email,
             subject: `Subscription Renewal Invoice #${orderId} - Payment Confirmation`,
             html: `

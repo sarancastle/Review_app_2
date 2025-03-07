@@ -504,7 +504,7 @@ const sendInvoiceEmail = async (transaction_id, name, email, orderId, paymentId,
                         </tr>
                         <tr>
                             <td style="padding: 10px; border: 1px solid #ddd; background: #f8f8f8;"><strong>Amount Paid:</strong></td>
-                            <td style="padding: 10px; border: 1px solid #ddd;">$${amount.toFixed(2)}</td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">₹${amount.toFixed(2)}</td>
                         </tr>
                         <tr>
                             <td style="padding: 10px; border: 1px solid #ddd; background: #f8f8f8;"><strong>Payment Date:</strong></td>
@@ -576,7 +576,7 @@ const sendRenewalInvoiceEmail = async (transaction_id, email, name, paymentId, o
                         </tr>
                         <tr>
                             <td style="padding: 10px; border: 1px solid #ddd; background: #f8f8f8;"><strong>Amount Charged:</strong></td>
-                            <td style="padding: 10px; border: 1px solid #ddd;">$${amount.toFixed(2)}</td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">₹${amount.toFixed(2)}</td>
                         </tr>
                         <tr>
                             <td style="padding: 10px; border: 1px solid #ddd; background: #f8f8f8;"><strong>Payment Date:</strong></td>

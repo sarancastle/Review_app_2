@@ -1,13 +1,14 @@
 
 const prisma = require('../../prisma')
+const config = require("../../../../dbConfig")
 const nodemailer = require('nodemailer');
 const bcrypt = require("bcryptjs");
 var jwt = require('jsonwebtoken');
 const transporter = nodemailer.createTransport({
     service: "gmail",
     auth: {
-        user: 'ikeyqr@gmail.com',
-        pass: 'jhmszkilzaiyhmyd',
+        user: config.EMAIL_ID,
+        pass: config.EMAIL_PASSWORD,
     }
 });
 
@@ -243,6 +244,8 @@ const userForgotPassword = async (req, res) => {
      // console.log("Stored OTP:", user.otp);
      // console.log("Provided OTP:", data.otp);
      // Check if OTP is valid and hasn't expired
+     console.log(data.otp)
+     console.log(user.otp)
      if (String(user.otp).trim() !== String(data.otp).trim()) {
          return res.json({ message: "Invalid code. Please try again." });
      }

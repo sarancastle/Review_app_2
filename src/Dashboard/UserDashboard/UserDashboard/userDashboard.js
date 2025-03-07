@@ -1,5 +1,6 @@
 const prisma = require("../../prisma")
 
+
 // All the details of the particular user
 const getUserDashboardById = async (req, res) => {
     // Extracting `id` from request parameters

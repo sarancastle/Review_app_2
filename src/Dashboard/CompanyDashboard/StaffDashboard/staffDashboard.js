@@ -63,6 +63,7 @@ const getParticularStaffReferrals = async (req, res) => {
                 businessType: true,
                 isActive: true,
                 createdAt: true, // Optional: Include timestamp
+                subscriptionEndDate: true
             },
         });
 

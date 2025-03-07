@@ -1,13 +1,14 @@
 const prisma = require("../../prisma")
 const nodemailer = require('nodemailer');
+const config = require('../../../../dbConfig')
 var jwt = require('jsonwebtoken');
 const bcrypt = require("bcryptjs");
 const moment = require('moment'); // Install moment.js for date formatting
 const transporter = nodemailer.createTransport({
     service: "gmail",
     auth: {
-        user: 'ikeyqr@gmail.com',
-        pass: 'jhmszkilzaiyhmyd',
+        user: config.EMAIL_ID,
+        pass: config.EMAIL_PASSWORD,
     }
 });
 
@@ -53,6 +54,7 @@ const employeesForgotPassword = async (req, res) => {
                 employeeEmail: data.email
             }
         });
+        console.log(employee)
         if (!employee) return res.status(404).json({ message: " User not found" });
 
         // Generate a 6-digit OTP
@@ -114,6 +116,7 @@ const employeesForgotPassword = async (req, res) => {
 const employeesCheckOtp = async (req, res) => {
     try {
         const data = req.body;
+        console.log(data)
 
         // Find user by email
         const employee = await prisma.employees.findUnique({
@@ -121,6 +124,7 @@ const employeesCheckOtp = async (req, res) => {
                 employeeEmail: data.email
             },
         });
+        console.log(employee)
 
         if (!employee) return res.status(404).json({ message: "Employee not found" });
 
@@ -146,6 +150,7 @@ const employeesCheckOtp = async (req, res) => {
 const employeesOtpVerify = async (req, res) => {
     try {
         const data = req.body;
+        console.log(data)
 
         // Find user by email
         const employee = await prisma.employees.findUnique({
@@ -153,7 +158,7 @@ const employeesOtpVerify = async (req, res) => {
                 employeeEmail: data.email
             },
         });
-
+console.log(employee)
         if (!employee) return res.status(404).json({ message: "Employee not found" });
         // console.log("Stored OTP:", user.otp);
         // console.log("Provided OTP:", data.otp);

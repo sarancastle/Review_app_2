@@ -194,7 +194,7 @@ const userForgotPassword = async (req, res) => {
 
     // Send OTP via email
     const mailOptions = {
-        from: "ikeyqr@gmail.com",
+        from: config.EMAIL_ID,
         to: data.email,
         subject: "Password Reset OTP",
         html: `<div style="font-family: Arial, sans-serif; color: #333; line-height: 1.6; margin: 0; padding: 20px; background-color: #f9f9f9; border: 1px solid #ddd; border-radius: 8px; max-width: 500px; margin: 20px auto;">
@@ -209,8 +209,8 @@ const userForgotPassword = async (req, res) => {
         This OTP is valid for <strong>5 minutes</strong>. Please do not share it with anyone, and if you didn't request this, please ignore this message.
     </p>
     <div style="margin-top: 30px; font-size: 12px; color: #555; border-top: 1px solid #ddd; padding-top: 10px; text-align: center;">
-        <p>This email was sent to you by <strong>ikeyqr Team</strong>. Please do not reply directly to this email. For assistance, contact us at <a href="mailto:ikeyqr@gmail.com" style="color: #007BFF;">ikeyqr@gmail.com</a>.</p>
-        <p>Visit our website at <a href="https://www.ikeyqr.com" style="color: #007BFF;">www.ikeyqr.com</a>.</p>
+        <p>This email was sent to you by <strong>logicQr Team</strong>. Please do not reply directly to this email. For assistance, contact us at <a href="mailto:thelogicqr@gmail.com" style="color: #007BFF;">thelogicqr@gmail.com</a>.</p>
+        <p>Visit our website at <a href="https://www.logicqr.com" style="color: #007BFF;">www.logicqr.com</a>.</p>
     </div>
 </div>
 `

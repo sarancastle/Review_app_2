@@ -1,3 +1,4 @@
+const config = require("../../../../dbConfig");
 const prisma = require("../../prisma")
 // const Redis = require('ioredis')
 //const client = new Redis("rediss://default:AeANAAIjcDEwYmY4YTRhZGQyMTg0YjVlOTgxYmI0MDNiMjdjNDliY3AxMA@desired-toad-57357.upstash.io:6379");
@@ -442,9 +443,9 @@ const updateParticularTicketStatus = async (req, res) => {
 
         // Send email
         let mailOptions = {
-            from: 'your-email@gmail.com',
+            from: config.EMAIL_ID,
             to: updatedHelpDesk.email,
-            subject: `ikeyQR Helpdesk Ticket Update`,
+            subject: `LogicQr Helpdesk Ticket Update`,
             html: `
                 <div style="font-family: Arial, sans-serif; max-width: 600px; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
                     <h2 style="color: #333;">Hello ${updatedHelpDesk.name},</h2>
@@ -455,7 +456,7 @@ const updateParticularTicketStatus = async (req, res) => {
                     <p>has been updated to: <strong style="color: green;">${status}</strong>.</p>
                     <p>If you need further assistance, please feel free to reach out.</p>
                     <hr>
-                    <p style="font-size: 12px; color: #777;">Best regards,<br>ikeyQR Helpdesk Support Team</p>
+                    <p style="font-size: 12px; color: #777;">Best regards,<br>LogicQr Helpdesk Support Team</p>
                 </div>
             `
         };

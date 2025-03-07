@@ -8,6 +8,7 @@ const { staffDetailsById, getParticularStaffReferrals } = require("./CompanyDash
 const { createOrder, paymentVerify, renewSubscription, getAllTransactions, getTransactionsByEmployee, getTransactionsByUser } = require("./CompanyDashboard/PaymentDetails/paymentDetails")
 const protectedtRoute = require('../../protectedRoute')
 const roleBasedAccess = require("../../roleBasedAccess")
+const { deleteTempOrder, getParticularTempOrder, getAllTempOrder } = require("./CompanyDashboard/tempOrders/TempOrders")
 
 // users Authentication api
 router.post("/usercheck", userCheck)
@@ -51,12 +52,14 @@ router.get("/user-settlement",statement)
 router.post("/create-order",createOrder)
 router.post("/razorpay-webhook",paymentVerify)//WEBHOOK
 router.post("/renew-subscription", renewSubscription); 
-router.get("/transactions",getAllTransactions)
-router.get("/transactions/:employeeId",getTransactionsByEmployee)
-router.get("/user-transactions/:userId",getTransactionsByUser)
+router.get("/transactions",protectedtRoute,roleBasedAccess(['ADMIN']),getAllTransactions)
+router.get("/transactions/:employeeId",protectedtRoute,roleBasedAccess(['ADMIN','STAFF']),getTransactionsByEmployee)
+router.get("/user-transactions/:userId",protectedtRoute,getTransactionsByUser)
 
-
-
+//temporder
+router.delete("/temporders/:id",deleteTempOrder)
+router.get("/temporders/:id",getParticularTempOrder)
+router.get("/temporders",getAllTempOrder)
 //staffDashboard api
 router.get("/staff/:id/referrals",protectedtRoute,getParticularStaffReferrals)
 

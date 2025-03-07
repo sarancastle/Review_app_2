@@ -4,8 +4,6 @@ const bcrypt = require("bcryptjs");
 const Razorpay = require("razorpay");
 const crypto = require("crypto");
 const config = require('../../../../dbConfig')
-const fs = require('fs');
-const PDFDocument = require('pdfkit');
 const nodemailer = require('nodemailer');
 
 const prisma = require('../..//prisma');
@@ -82,8 +80,8 @@ const createOrder = async (req, res) => {
             currency: "INR",
 
         });
-        console.log(order)
-        console.log(data)
+        // console.log(order)
+        // console.log(data)
         const temporder = await prisma.temporder.create({
             data: {
                 fullName: data.fullName,
@@ -478,7 +476,7 @@ const sendInvoiceEmail = async (transaction_id, name, email, orderId, paymentId,
         let mailOptions = {
             from: config.EMAIL_ID,
             to: email,
-            subject: `Invoice #${orderId} - Payment Confirmation`,
+            subject: `Invoice - Payment Confirmation`,
             html: `
                 <div style="font-family: Arial, sans-serif; color: #333; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
                     <h2 style="color: #007bff; text-align: center; margin-bottom: 20px;">Payment Invoice</h2>
@@ -548,7 +546,7 @@ const sendRenewalInvoiceEmail = async (transaction_id, email, name, paymentId, o
         let mailOptions = {
             from: config.EMAIL_ID,
             to: email,
-            subject: `Subscription Renewal Invoice #${orderId} - Payment Confirmation`,
+            subject: `Subscription Renewal Invoice - Payment Confirmation`,
             html: `
                 <div style="font-family: Arial, sans-serif; color: #333; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
                     <h2 style="color: #007bff; text-align: center; margin-bottom: 20px;">Subscription Renewal Invoice</h2>

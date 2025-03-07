@@ -334,6 +334,8 @@ const paymentVerify = async (req, res) => {
                             where: { orderId },
                             data: { status: "paid" },
                         }),
+
+                        await sendInvoiceEmail(user.email, user.name, paymentId, orderId, amount);
                     
 
                     console.log("✅ Revenue Recorded for Renewal");

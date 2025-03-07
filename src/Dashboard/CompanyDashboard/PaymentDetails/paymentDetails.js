@@ -4,6 +4,9 @@ const bcrypt = require("bcryptjs");
 const Razorpay = require("razorpay");
 const crypto = require("crypto");
 const config = require('../../../../dbConfig')
+const fs = require('fs');
+const PDFDocument = require('pdfkit');
+const nodemailer = require('nodemailer');
 
 const prisma = require('../..//prisma');
 const razorpay = new Razorpay({
@@ -38,7 +41,7 @@ const getTransactionsByEmployee = async (req, res) => {
         if (transactions.length === 0) {
             return res.status(404).json({ message: 'No transactions found for this employee' });
         }
-        
+
 
         res.status(200).json(transactions);
     } catch (error) {
@@ -317,26 +320,25 @@ const paymentVerify = async (req, res) => {
 
                     console.log("✅ Subscription Renewed:", updatedUser);
 
-                    
-                       await prisma.transaction.create({
-                            data: {
-                                user_id: updatedUser.user_id,
-                                userName: updatedUser.name,
-                                orderId,
-                                paymentId,
-                                employee_id:updatedUser.employee_id,
-                                amount,
-                                status: "paid",
-                                type: "Subscription Repaid",
-                            },
-                        }),
-                      await prisma.revenue.update({
-                            where: { orderId },
-                            data: { status: "paid" },
-                        }),
 
-                        await sendInvoiceEmail(updatedUser.email, updatedUser.name, paymentId, orderId, amount);
-                    
+                    const transaction = await prisma.transaction.create({
+                        data: {
+                            user_id: updatedUser.user_id,
+                            userName: updatedUser.name,
+                            orderId,
+                            paymentId,
+                            employee_id: updatedUser.employee_id,
+                            amount,
+                            status: "paid",
+                            type: "Subscription Repaid",
+                        },
+                    })
+                    await prisma.revenue.update({
+                        where: { orderId },
+                        data: { status: "paid" },
+                    }),
+
+                        await sendRenewalInvoiceEmail(transaction.transaction_id, updatedUser.email, updatedUser.name, paymentId, orderId, amount, updatedUser.subscriptionStartDate, updatedUser.subscriptionEndDate);
 
                     console.log("✅ Revenue Recorded for Renewal");
                     return res.status(200).json({ message: "Subscription renewed successfully" });
@@ -403,11 +405,11 @@ const paymentVerify = async (req, res) => {
                 console.log('✅ New User Created:', dashboard);
 
                 // Create Transaction Record
-                const jarom = await prisma.transaction.create({
+                const transaction = await prisma.transaction.create({
                     data: {
                         user_id: newUser.user_id,
                         userName: newUser.name,
-                        employee_id:newUser.employee_id,
+                        employee_id: newUser.employee_id,
                         orderId,
                         paymentId,
                         amount,
@@ -416,7 +418,7 @@ const paymentVerify = async (req, res) => {
                     },
                 });
 
-                console.log('✅ Transaction-Recorded', jarom);
+                console.log('✅ Transaction-Recorded', transaction);
 
 
 
@@ -441,8 +443,8 @@ const paymentVerify = async (req, res) => {
                 await prisma.temporder.delete({ where: { orderId } });
                 console.log('✅ Temp Order Deleted');
 
-                 // Send Invoice Email
-                 await sendInvoiceEmail(user.email, user.name, paymentId, orderId, amount);
+                // Send Invoice Email
+                await sendInvoiceEmail(transaction.transaction_id, newUser.name, newUser.email, orderId, paymentId, amount, newUser.subscriptionStartDate, newUser.subscriptionEndDate);
 
                 console.log("✅ Transaction Recorded & Temp Order Deleted");
                 return res.status(200).json({ message: `${newUser.name} has been registered successfully` });
@@ -463,42 +465,155 @@ const paymentVerify = async (req, res) => {
     }
 };
 
-
-// Function to Send Invoice Email
-const sendInvoiceEmail = async (email, name, paymentId, orderId, amount) => {
+const sendInvoiceEmail = async (transaction_id, name, email, orderId, paymentId, amount, subscriptionStartDate, subscriptionEndDate) => {
     try {
         let transporter = nodemailer.createTransport({
             service: 'gmail',
             auth: {
-                user: config.EMAIL_ID, // Your email address
-                pass: config.EMAIL_PASSWORD, // Your email password or app password
+                user: config.EMAIL_ID, // Your email
+                pass: config.EMAIL_PASSWORD // Use Google App Password
             }
         });
 
         let mailOptions = {
-            from:config.EMAIL_ID,
+            from: "thelogicqr@gmail.com",
             to: email,
-            subject: 'Payment Invoice - Subscription Confirmation',
+            subject: `Invoice #${orderId} - Payment Confirmation`,
             html: `
-                <h2>Invoice for Your Payment</h2>
-                <p>Hello ${name},</p>
-                <p>Thank you for your payment. Here are the details of your transaction:</p>
-                <ul>
-                    <li><strong>Payment ID:</strong> ${paymentId}</li>
-                    <li><strong>Order ID:</strong> ${orderId}</li>
-                    <li><strong>Amount Paid:</strong> $${amount.toFixed(2)}</li>
-                </ul>
-                <p>Your subscription has been successfully activated.</p>
-                <p>Best regards,<br>LogicQR Team</p>
+                <div style="font-family: Arial, sans-serif; color: #333; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
+                    <h2 style="color: #007bff; text-align: center; margin-bottom: 20px;">Payment Invoice</h2>
+                    <p style="font-size: 16px;">Dear <strong>${name}</strong>,</p>
+                    <p style="font-size: 14px;">Thank you for your payment. Below are the details of your transaction:</p>
+                    
+                    <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+                    <tr>
+                            <td style="padding: 10px; border: 1px solid #ddd; background: #f8f8f8;"><strong>TransactionId:</strong></td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">#${transaction_id}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 10px; border: 1px solid #ddd; background: #f8f8f8;"><strong>OrderId:</strong></td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">#${orderId}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 10px; border: 1px solid #ddd; background: #f8f8f8;"><strong>PaymentId:</strong></td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">#${paymentId}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 10px; border: 1px solid #ddd; background: #f8f8f8;"><strong>Customer Name:</strong></td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">${name}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 10px; border: 1px solid #ddd; background: #f8f8f8;"><strong>Amount Paid:</strong></td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">$${amount.toFixed(2)}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 10px; border: 1px solid #ddd; background: #f8f8f8;"><strong>Payment Date:</strong></td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">${new Date().toLocaleDateString()}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 10px; border: 1px solid #ddd; background: #f8f8f8;"><strong>Subscription StartDate:</strong></td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">${subscriptionStartDate}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 10px; border: 1px solid #ddd; background: #f8f8f8;"><strong>Subscription EndDate:</strong></td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">${subscriptionEndDate}</td>
+                        </tr>
+                    </table>
+
+                    <p style="font-size: 14px; margin-top: 20px;">If you have any questions regarding this invoice, please feel free to contact our support team.</p>
+                    <p style="font-size: 14px; margin-top: 10px;">Best regards,</p>
+                    <p style="font-size: 16px; font-weight: bold;">LogicQR Team</p>
+                </div>
             `
         };
 
         await transporter.sendMail(mailOptions);
         console.log("✅ Invoice Email Sent to:", email);
+
     } catch (error) {
         console.error("❌ Email Sending Failed:", error);
     }
 };
+
+const sendRenewalInvoiceEmail = async (transaction_id, email, name, paymentId, orderId, amount, subscriptionStartDate, subscriptionEndDate) => {
+    try {
+        let transporter = nodemailer.createTransport({
+            service: 'gmail',
+            auth: {
+                user: config.EMAIL_ID, // Your email
+                pass: config.EMAIL_PASSWORD // Use Google App Password
+            }
+        });
+
+        let mailOptions = {
+            from: "thelogicqr@gmail.com",
+            to: email,
+            subject: `Subscription Renewal Invoice #${orderId} - Payment Confirmation`,
+            html: `
+                <div style="font-family: Arial, sans-serif; color: #333; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
+                    <h2 style="color: #007bff; text-align: center; margin-bottom: 20px;">Subscription Renewal Invoice</h2>
+                    <p style="font-size: 16px;">Dear <strong>${name}</strong>,</p>
+                    <p style="font-size: 14px;">Your subscription has been successfully renewed. Below are the details of your renewal transaction:</p>
+                    
+                    <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+
+                    <tr>
+                            <td style="padding: 10px; border: 1px solid #ddd; background: #f8f8f8;"><strong>TransactionId:</strong></td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">#${transaction_id}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 10px; border: 1px solid #ddd; background: #f8f8f8;"><strong>OrderId:</strong></td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">#${orderId}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 10px; border: 1px solid #ddd; background: #f8f8f8;"><strong>PaymentId:</strong></td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">#${paymentId}</td>
+                        </tr>
+                        
+                        <tr>
+                            <td style="padding: 10px; border: 1px solid #ddd; background: #f8f8f8;"><strong>Customer Name:</strong></td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">${name}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 10px; border: 1px solid #ddd; background: #f8f8f8;"><strong>Amount Charged:</strong></td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">$${amount.toFixed(2)}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 10px; border: 1px solid #ddd; background: #f8f8f8;"><strong>Payment Date:</strong></td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">${new Date().toLocaleDateString()}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 10px; border: 1px solid #ddd; background: #f8f8f8;"><strong>Subscription StartDate:</strong></td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">${subscriptionStartDate}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 10px; border: 1px solid #ddd; background: #f8f8f8;"><strong>Subscription EndDate:</strong></td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">${subscriptionEndDate}</td>
+                        </tr>
+                    </table>
+
+                    <p style="font-size: 14px; margin-top: 20px;">If you have any questions regarding this invoice or wish to update your subscription preferences, please contact our support team.</p>
+                    <p style="font-size: 14px; margin-top: 10px;">Best regards,</p>
+                    <p style="font-size: 16px; font-weight: bold;">LogicQR Team</p>
+                </div>
+            `
+        };
+
+        await transporter.sendMail(mailOptions);
+        console.log("✅ Renewal Invoice Email Sent to:", email);
+
+    } catch (error) {
+        console.error("❌ Renewal Invoice Email Sending Failed:", error);
+    }
+};
+
+// Call the function to send email
+// (async () => {
+//     await sendInvoiceEmail('jaromjery112@gmail.com', 'Test User', 'ORDER123', 1900);
+// })();
+// (async () => {
+//     await sendRenewalInvoiceEmail('jaromjery112@gmail.com', 'Test User', 'ORDER123', 1900);
+// })();
 
 const renewSubscription = async (req, res) => {
     try {

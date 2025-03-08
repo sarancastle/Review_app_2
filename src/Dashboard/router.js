@@ -8,7 +8,8 @@ const { staffDetailsById, getParticularStaffReferrals } = require("./CompanyDash
 const { createOrder, paymentVerify, renewSubscription, getAllTransactions, getTransactionsByEmployee, getTransactionsByUser } = require("./CompanyDashboard/PaymentDetails/paymentDetails")
 const protectedtRoute = require('../../protectedRoute')
 const roleBasedAccess = require("../../roleBasedAccess")
-const { deleteTempOrder, getParticularTempOrder, getAllTempOrder } = require("./CompanyDashboard/tempOrders/TempOrders")
+const { deleteTempOrder,  getAllTempOrder } = require("./CompanyDashboard/tempOrders/TempOrders")
+const { sendMail } = require("./CompanyDashboard/tempOrders/LandingPage")
 
 // users Authentication api
 router.post("/usercheck", userCheck)
@@ -58,8 +59,9 @@ router.get("/user-transactions/:userId",protectedtRoute,getTransactionsByUser)
 
 //temporder
 router.delete("/temporders/:id",deleteTempOrder)
-router.get("/temporders/:id",getParticularTempOrder)
 router.get("/temporders",getAllTempOrder)
+router.post("/send-mail",sendMail)
+
 //staffDashboard api
 router.get("/staff/:id/referrals",protectedtRoute,getParticularStaffReferrals)
 

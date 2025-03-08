@@ -310,11 +310,17 @@ const paymentVerify = async (req, res) => {
                     const updatedUser = await prisma.user.update({
                         where: { user_id: renewal.user_id },
                         data: {
+                            // subscriptionStartDate: new Date(), // Current time
+                            // subscriptionEndDate: new Date(Date.now() + 180 * 24 * 60 * 60 * 1000),
                             subscriptionStartDate: new Date(), // Set to the current time
                             subscriptionEndDate: new Date(Date.now() + 5 * 60 * 1000), // Extend by 2 minutes
                             isActive: true // Set to true
                         },
                     });
+
+
+
+
 
                     console.log("✅ Subscription Renewed:", updatedUser);
 
@@ -391,6 +397,8 @@ const paymentVerify = async (req, res) => {
                         isActive: true,
                         subscriptionStartDate: new Date(),
                         subscriptionEndDate: new Date(Date.now() + 5 * 60 * 1000), // 2 minutes from now
+                        // subscriptionStartDate: new Date(), // Current time
+                        // subscriptionEndDate: new Date(Date.now() + 180 * 24 * 60 * 60 * 1000),
                     }
                 });
 
